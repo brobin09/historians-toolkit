@@ -52,13 +52,13 @@ a:focus-visible{outline:2px solid var(--bluepencil);outline-offset:3px;border-ra
   margin-bottom:14px;
 }
 h1{
-  font-family:'Spectral',serif;font-weight:700;font-size:clamp(2.6rem,6vw,4.4rem);line-height:1;
+  font-family:'Spectral',serif;font-weight:700;font-size:clamp(2.3rem,5.4vw,3.9rem);line-height:1.05;
   letter-spacing:-.015em;margin-bottom:22px;
 }
 h1 .amp{font-style:italic;font-weight:400;color:var(--ink-soft);padding:0 .08em}
 .lede{
   font-family:'Spectral',serif;font-size:clamp(1.05rem,1.6vw,1.2rem);line-height:1.6;color:var(--ink);
-  max-width:640px;
+  max-width:680px;
 }
 .lede em{font-style:italic;color:var(--ink-soft)}
 
@@ -70,7 +70,7 @@ h1 .amp{font-style:italic;font-weight:400;color:var(--ink-soft);padding:0 .08em}
 .shelf-label::before,.shelf-label::after{content:"";flex:1;height:1px;background:var(--rule)}
 .shelf-label::before{max-width:40px}
 
-.shelf{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:22px}
+.shelf{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:22px}
 
 .tool{
   display:flex;flex-direction:column;background:var(--panel);border:1.5px solid var(--ink);
@@ -155,8 +155,8 @@ footer .colophon{font-family:'Spectral',serif;font-style:italic}
 
   <section class="hero">
     <p class="eyebrow">Tools for reading, thinking, and situating</p>
-    <h1>Sourcebook <span class="amp">&amp;</span> Strata</h1>
-    <p class="lede">Two browser-based tools for the history classroom. One is a workspace for <em>reading a text closely</em>. The other is a workspace for <em>seeing how texts about the past have been read</em>. Both are free, both are yours to use in your own courses, and both run entirely in your browser — nothing to install, nothing to sign up for.</p>
+    <h1>Sourcebook, Strata <span class="amp">&amp;</span> Warrant</h1>
+    <p class="lede">Three browser-based tools for the history classroom. One is a workspace for <em>reading a text closely</em>. One is a workspace for <em>seeing how texts about the past have been read</em>. And one is a workspace for <em>building an argument out of the evidence you have gathered</em>. All are free, all are yours to use in your own courses, and all run entirely in your browser — nothing to install, nothing to sign up for.</p>
   </section>
 
   <p class="shelf-label">The Shelf</p>
@@ -189,6 +189,19 @@ footer .colophon{font-family:'Spectral',serif;font-style:italic}
       <div class="tool-open"><span>Open Strata</span><span class="arrow">→</span></div>
     </a>
 
+    <a class="tool" href="warrant.html">
+      <span class="tool-num">III</span>
+      <div class="tool-name">Warrant</div>
+      <div class="tool-tag">Source-to-Argument Scaffold</div>
+      <p class="tool-desc">A workshop where research papers are framed before they are written — <em>evidence first, argument on top of it</em>. Stock a pool with your sources, draft a working thesis, then build each argument on a claim, a secondary source for context, three primary sources, and a closing scholar in support.</p>
+      <ul class="tool-features">
+        <li>Each argument shows its structure — the claim stands only when the evidence beneath it is in place</li>
+        <li>Flags unused sources and unfinished blocks before you draft</li>
+        <li>Exports a formatted Word outline ready to submit</li>
+      </ul>
+      <div class="tool-open"><span>Open Warrant</span><span class="arrow">→</span></div>
+    </a>
+
   </div>
 
   <section class="notes">
@@ -196,19 +209,19 @@ footer .colophon{font-family:'Spectral',serif;font-style:italic}
     <div class="notes-grid">
       <div class="note">
         <h3>Where your work lives</h3>
-        <p>Both tools save automatically in your browser as you go. Your work stays only on your device — nobody else can see it, not even the instructor. Each visitor has their own private workspace at the same URL.</p>
+        <p>All three tools save automatically in your browser as you go. Your work stays only on your device — nobody else can see it, not even the instructor. Each visitor has their own private workspace at the same URL.</p>
       </div>
       <div class="note">
         <h3>Keep a backup</h3>
-        <p>Browser storage can be cleared — by settings, updates, or shared computers. Use the Export button often. A save dialog will open so you can choose a folder. Put it inside a cloud-synced folder like Drive, OneDrive, or iCloud and your backups sync automatically.</p>
+        <p>Browser storage can be cleared — by settings, updates, or shared computers. Use the Export or Save button often. A save dialog will open so you can choose a folder. Put it inside a cloud-synced folder like Drive, OneDrive, or iCloud and your backups sync automatically.</p>
       </div>
       <div class="note">
         <h3>The exported file <em>is</em> the submission</h3>
-        <p>Turn in the JSON file the tool exports. Your instructor can import it into their own copy of the tool and see your annotations or timeline exactly as you left them.</p>
+        <p>Turn in the file the tool produces. Sourcebook and Strata export a JSON file your instructor can import and see exactly as you left it. Warrant saves a JSON workspace the same way — and also exports a formatted Word outline, which is the document you submit.</p>
       </div>
       <div class="note">
         <h3>Best on a laptop</h3>
-        <p>Sourcebook's text-selection annotation works on any device, but a laptop or tablet is more comfortable than a phone. Strata browses fine on any screen size.</p>
+        <p>Sourcebook's text-selection annotation works on any device, but a laptop or tablet is more comfortable than a phone. Strata and Warrant browse fine on any screen size.</p>
       </div>
     </div>
   </section>
