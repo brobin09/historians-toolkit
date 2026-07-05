@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Warrant — Source-to-Argument Scaffold</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f3ecdd;
+    --paper-deep:#eadfc7;
+    --paper-card:#f8f3e7;
+    --ink:#241f19;
+    --ink-soft:#5a5040;
+    --ink-faint:#8a7f6a;
+    --rule:#c9bda0;
+    --rule-soft:#ddd3ba;
+    --primary:#8a3324;   /* archival stamp red — primary sources */
+    --primary-soft:#f0dfd7;
+    --secondary:#2e4756; /* slate ink blue — secondary sources */
+    --secondary-soft:#dde6ea;
+    --stand:#4a5d3a;     /* moss — complete / standing */
+    --stand-soft:#e3e8d9;
+    --warn:#9a6b1f;
+    --warn-soft:#f2e7cd;
+    --shadow:0 1px 3px rgba(36,31,25,.14), 0 6px 18px rgba(36,31,25,.08);
+    --serif:'Source Serif 4', Georgia, 'Times New Roman', serif;
+    --mono:'IBM Plex Mono', 'Courier New', monospace;
+    --display:'IM Fell English', Georgia, serif;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    *,*::before,*::after{animation:none!important; transition:none!important;}
+  }
+  body{
+    background:var(--paper);
+    background-image:radial-gradient(ellipse at 20% 0%, rgba(255,252,242,.55), transparent 55%),
+                     radial-gradient(ellipse at 90% 100%, rgba(138,51,36,.05), transparent 45%);
+    color:var(--ink);
+    font-family:var(--serif);
+    font-size:16px;
+    line-height:1.55;
+    min-height:100vh;
+  }
+  button{font-family:var(--mono); cursor:pointer;}
+  button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible{
+    outline:2px solid var(--primary); outline-offset:2px;
+  }
+  input, textarea, select{
+    font-family:var(--serif); font-size:15px; color:var(--ink);
+    background:#fffdf6; border:1px solid var(--rule); border-radius:2px;
+    padding:8px 10px; width:100%;
+  }
+  textarea{resize:vertical; min-height:64px; line-height:1.5;}
+  select{font-family:var(--mono); font-size:13px; cursor:pointer;}
+  ::placeholder{color:var(--ink-faint); font-style:italic;}
+
+  /* ── Masthead ─────────────────────────────── */
+  header{
+    border-bottom:3px double var(--ink);
+    background:var(--paper);
+    position:sticky; top:0; z-index:40;
+    box-shadow:0 1px 0 rgba(36,31,25,.06);
+  }
+  .mast{
+    max-width:1280px; margin:0 auto; padding:14px 20px 10px;
+    display:flex; align-items:baseline; gap:18px; flex-wrap:wrap;
+  }
+  .mast h1{
+    font-family:var(--display); font-weight:400; font-size:34px; letter-spacing:.5px;
+    line-height:1;
+  }
+  .mast .tagline{
+    font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--ink-soft);
+  }
+  .mast .grow{flex:1;}
+  .mastbtns{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+  .btn{
+    border:1px solid var(--ink); background:var(--paper-card); color:var(--ink);
+    font-size:12px; letter-spacing:.04em; padding:7px 12px; border-radius:2px;
+    transition:background .15s ease;
+  }
+  .btn:hover{background:var(--paper-deep);}
+  .btn.solid{background:var(--ink); color:var(--paper);}
+  .btn.solid:hover{background:#3a332a;}
+  .btn.small{padding:4px 9px; font-size:11px;}
+  .savedot{
+    font-family:var(--mono); font-size:11px; color:var(--ink-soft);
+    display:inline-flex; align-items:center; gap:6px;
+  }
+  .savedot::before{
+    content:''; width:8px; height:8px; border-radius:50%; background:var(--stand); display:inline-block;
+  }
+  .savedot.dirty::before{background:var(--warn);}
+
+  /* ── Layout ───────────────────────────────── */
+  .wrap{
+    max-width:1280px; margin:0 auto; padding:22px 20px 90px;
+    display:grid; grid-template-columns:340px 1fr; gap:26px; align-items:start;
+  }
+  @media (max-width:920px){
+    .wrap{grid-template-columns:1fr;}
+    aside.pool{position:static;}
+  }
+
+  /* ── Evidence pool ────────────────────────── */
+  aside.pool{
+    position:sticky; top:76px;
+    max-height:calc(100vh - 96px); overflow-y:auto;
+    background:var(--paper-card); border:1px solid var(--rule); border-radius:2px;
+    box-shadow:var(--shadow); padding:16px;
+  }
+  .pool h2, .panel h2{
+    font-family:var(--mono); font-size:12px; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--ink-soft); border-bottom:1px solid var(--rule); padding-bottom:8px; margin-bottom:12px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .pool h2 .count{
+    margin-left:auto; font-size:11px; background:var(--paper-deep); border:1px solid var(--rule);
+    border-radius:10px; padding:1px 8px; letter-spacing:0;
+  }
+  .addsrc{display:grid; gap:8px; margin-bottom:14px;}
+  .kindrow{display:flex; gap:6px;}
+  .kindbtn{
+    flex:1; border:1px solid var(--rule); background:#fffdf6; font-size:11px; letter-spacing:.06em;
+    padding:6px 4px; border-radius:2px; color:var(--ink-soft); text-transform:uppercase;
+  }
+  .kindbtn.on-primary{border-color:var(--primary); background:var(--primary-soft); color:var(--primary); font-weight:600;}
+  .kindbtn.on-secondary{border-color:var(--secondary); background:var(--secondary-soft); color:var(--secondary); font-weight:600;}
+  .srclist{display:grid; gap:10px;}
+  .srccard{
+    border:1px solid var(--rule); border-left:4px solid var(--rule); border-radius:2px;
+    background:#fffdf6; padding:10px 10px 8px; position:relative;
+  }
+  .srccard.primary{border-left-color:var(--primary);}
+  .srccard.secondary{border-left-color:var(--secondary);}
+  .srccard .badgerow{display:flex; align-items:center; gap:8px; margin-bottom:6px;}
+  .badge{
+    font-family:var(--mono); font-size:10px; letter-spacing:.12em; text-transform:uppercase;
+    padding:2px 7px; border-radius:2px;
+  }
+  .badge.primary{background:var(--primary-soft); color:var(--primary); border:1px solid var(--primary);}
+  .badge.secondary{background:var(--secondary-soft); color:var(--secondary); border:1px solid var(--secondary);}
+  .badge.ghost{background:var(--paper-deep); color:var(--ink-soft); border:1px solid var(--rule);}
+  .srccard .used{
+    font-family:var(--mono); font-size:10px; color:var(--stand); margin-left:auto;
+  }
+  .srccard .used.no{color:var(--warn);}
+  .srccard textarea{min-height:44px; font-size:14px; background:transparent; border:none; padding:2px 0; border-radius:0;}
+  .srccard textarea:focus{background:#fffdf6;}
+  .srccard .note{font-size:13px; color:var(--ink-soft);}
+  .srccard .del{
+    position:absolute; top:6px; right:6px; border:none; background:none; color:var(--ink-faint);
+    font-size:14px; line-height:1; padding:4px;
+  }
+  .srccard .del:hover{color:var(--primary);}
+  .emptymsg{
+    font-size:13.5px; font-style:italic; color:var(--ink-faint); padding:8px 2px; line-height:1.5;
+  }
+
+  /* ── Main paper skeleton ──────────────────── */
+  main{display:grid; gap:22px;}
+  .panel{
+    background:var(--paper-card); border:1px solid var(--rule); border-radius:2px;
+    box-shadow:var(--shadow); padding:20px;
+  }
+  .panel h2 .stamp{margin-left:auto;}
+  .fieldlbl{
+    font-family:var(--mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--ink-soft); display:block; margin:14px 0 5px;
+  }
+  .fieldlbl:first-of-type{margin-top:0;}
+  .hint{font-size:13px; font-style:italic; color:var(--ink-faint); margin-top:3px; line-height:1.45;}
+  .metagrid{display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;}
+  @media (max-width:700px){.metagrid{grid-template-columns:1fr;}}
+  .thesisbox textarea{
+    font-size:17px; min-height:76px; border-left:4px solid var(--ink); background:#fffdf6;
+  }
+
+  /* argument block */
+  .argblock{position:relative;}
+  .arghead{display:flex; align-items:center; gap:12px; margin-bottom:4px;}
+  .arghead h3{
+    font-family:var(--display); font-weight:400; font-size:22px; letter-spacing:.03em;
+  }
+  .arghead .standtag{
+    font-family:var(--mono); font-size:10px; letter-spacing:.12em; text-transform:uppercase;
+    padding:3px 9px; border-radius:2px; border:1px solid var(--rule); color:var(--ink-soft); background:var(--paper-deep);
+  }
+  .arghead .standtag.stands{border-color:var(--stand); color:var(--stand); background:var(--stand-soft);}
+  .arghead .rm{margin-left:auto;}
+  .argbody{display:grid; grid-template-columns:150px 1fr; gap:18px; align-items:start;}
+  @media (max-width:700px){.argbody{grid-template-columns:1fr;} .glyphwrap{display:flex; justify-content:center;}}
+  .glyphwrap{position:sticky; top:96px;}
+  .glyph{width:150px; height:190px;}
+  .slot{
+    border:1px solid var(--rule-soft); border-radius:2px; padding:10px 12px; margin-bottom:10px;
+    background:rgba(255,253,246,.55);
+  }
+  .slot.filled-primary{border-left:4px solid var(--primary);}
+  .slot.filled-secondary{border-left:4px solid var(--secondary);}
+  .slot .slotlbl{
+    font-family:var(--mono); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--ink-soft); display:flex; align-items:center; gap:8px; margin-bottom:6px;
+  }
+  .slot .slotlbl .tick{margin-left:auto; font-size:12px; color:var(--stand);}
+  .slot select{margin-bottom:6px;}
+  .dupflag{
+    font-family:var(--mono); font-size:10.5px; color:var(--warn); background:var(--warn-soft);
+    border:1px solid var(--warn); border-radius:2px; padding:2px 7px; display:inline-block; margin-top:4px;
+  }
+  .addarg{
+    border:1px dashed var(--rule); background:transparent; width:100%; padding:14px;
+    font-size:13px; letter-spacing:.06em; color:var(--ink-soft); border-radius:2px;
+  }
+  .addarg:hover{border-color:var(--ink); color:var(--ink);}
+
+  /* readiness */
+  .ready .meter{
+    height:10px; background:var(--paper-deep); border:1px solid var(--rule); border-radius:6px;
+    overflow:hidden; margin:8px 0 4px;
+  }
+  .ready .meter > div{height:100%; background:var(--stand); width:0%; transition:width .3s ease;}
+  .ready .pct{font-family:var(--mono); font-size:12px; color:var(--ink-soft);}
+  .checklist{list-style:none; margin-top:10px; display:grid; gap:6px;}
+  .checklist li{
+    font-size:14px; display:flex; gap:9px; align-items:baseline; color:var(--ink-soft);
+  }
+  .checklist li::before{
+    content:'○'; font-family:var(--mono); color:var(--ink-faint);
+  }
+  .checklist li.done{color:var(--ink);}
+  .checklist li.done::before{content:'●'; color:var(--stand);}
+  .checklist li.flag::before{content:'▲'; color:var(--warn);}
+
+  /* ── Welcome overlay ──────────────────────── */
+  .overlay{
+    position:fixed; inset:0; background:rgba(36,31,25,.45); z-index:100;
+    display:flex; align-items:center; justify-content:center; padding:20px;
+  }
+  .welcome{
+    max-width:560px; background:var(--paper-card); border:1px solid var(--ink);
+    box-shadow:0 20px 60px rgba(36,31,25,.35); padding:30px 32px; border-radius:2px;
+  }
+  .welcome h2{
+    font-family:var(--display); font-weight:400; font-size:32px; margin-bottom:4px;
+    border:none; padding:0; letter-spacing:.02em; text-transform:none; color:var(--ink);
+  }
+  .welcome .sub{
+    font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--ink-soft); margin-bottom:16px;
+  }
+  .welcome p{font-size:15px; margin-bottom:12px; color:var(--ink-soft);}
+  .welcome p b{color:var(--ink); font-weight:600;}
+  .welcome .btn{margin-top:8px;}
+  .hidden{display:none!important;}
+
+  footer{
+    border-top:1px solid var(--rule); margin-top:40px; padding:16px 20px 30px;
+    font-family:var(--mono); font-size:11px; letter-spacing:.08em; color:var(--ink-faint);
+    text-align:center;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="mast">
+    <h1>Warrant</h1>
+    <span class="tagline">Source-to-Argument Scaffold · Public History Lab</span>
+    <span class="grow"></span>
+    <span class="savedot" id="saveDot">saved</span>
+    <div class="mastbtns">
+      <button class="btn" id="btnOpen">Open file</button>
+      <button class="btn" id="btnSave">Save file</button>
+      <button class="btn solid" id="btnExport">Export outline</button>
+      <button class="btn small" id="btnHelp" title="How this works">?</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <aside class="pool" aria-label="Evidence pool">
+    <h2>Evidence Pool <span class="count" id="srcCount">0</span></h2>
+    <div class="addsrc">
+      <div class="kindrow">
+        <button class="kindbtn" id="kindPrimary" type="button">Primary</button>
+        <button class="kindbtn" id="kindSecondary" type="button">Secondary</button>
+      </div>
+      <textarea id="newCitation" placeholder="Citation — author, title, date, where you found it" rows="2"></textarea>
+      <textarea id="newNote" placeholder="What does this source show? One or two sentences." rows="2"></textarea>
+      <button class="btn" id="btnAddSrc" type="button">Add to pool</button>
+    </div>
+    <div class="srclist" id="srcList"></div>
+  </aside>
+
+  <main>
+    <section class="panel" id="metaPanel">
+      <h2>The Paper</h2>
+      <div class="metagrid">
+        <div>
+          <label class="fieldlbl" for="mTitle">Working title</label>
+          <input id="mTitle" type="text" placeholder="Your paper's title">
+        </div>
+        <div>
+          <label class="fieldlbl" for="mName">Your name</label>
+          <input id="mName" type="text" placeholder="Name">
+        </div>
+        <div>
+          <label class="fieldlbl" for="mCourse">Course</label>
+          <input id="mCourse" type="text" placeholder="e.g., HIST 2000">
+        </div>
+      </div>
+      <div class="thesisbox">
+        <label class="fieldlbl" for="mThesis">Working thesis</label>
+        <textarea id="mThesis" placeholder="One or two sentences making an arguable claim — something a reasonable person could disagree with."></textarea>
+        <p class="hint">A thesis is a claim, not a topic. "NCCU students protested in the 1950s" is a topic. "Student protest at NCCU forced the administration to abandon paternalism" is a claim.</p>
+      </div>
+    </section>
+
+    <section class="panel" id="introPanel">
+      <h2>Introduction</h2>
+      <label class="fieldlbl" for="iHook">Hook and historical context</label>
+      <textarea id="iHook" placeholder="How will you open? What background does the reader need? Context at this level comes from secondary sources."></textarea>
+      <div id="introCtxSlot"></div>
+      <label class="fieldlbl" for="iSig">Significance</label>
+      <textarea id="iSig" placeholder="Why does this matter? What do we understand better once your argument lands?"></textarea>
+      <label class="fieldlbl" for="iRoad">Roadmap</label>
+      <textarea id="iRoad" placeholder="In order, what will each argument show? End by restating the thesis."></textarea>
+    </section>
+
+    <div id="argList"></div>
+
+    <button class="addarg" id="btnAddArg" type="button">＋ Add an argument</button>
+
+    <section class="panel" id="concPanel">
+      <h2>Conclusion</h2>
+      <label class="fieldlbl" for="cRestate">Return to the thesis</label>
+      <textarea id="cRestate" placeholder="Restate the thesis in light of what the arguments have shown — not word for word."></textarea>
+      <label class="fieldlbl" for="cSoWhat">So what</label>
+      <textarea id="cSoWhat" placeholder="Where does this leave us? What question does your paper open next?"></textarea>
+    </section>
+
+    <section class="panel ready" id="readyPanel">
+      <h2>Readiness</h2>
+      <div class="meter"><div id="meterFill"></div></div>
+      <span class="pct" id="meterPct">0% complete</span>
+      <ul class="checklist" id="checkList"></ul>
+    </section>
+  </main>
+</div>
+
+<footer>WARRANT · HISTORIANS' TOOLKIT · YOUR WORK STAYS IN THIS BROWSER — SAVE A FILE TO KEEP IT</footer>
+
+<div class="overlay hidden" id="welcomeOverlay">
+  <div class="welcome" role="dialog" aria-labelledby="welcomeTitle">
+    <h2 id="welcomeTitle">Warrant</h2>
+    <div class="sub">Source-to-Argument Scaffold</div>
+    <p>A <b>warrant</b> is what licenses the move from evidence to claim. This tool makes you build your paper in that order — <b>evidence first, argument on top of it</b>.</p>
+    <p><b>1.</b> Stock the evidence pool on the left with your primary and secondary sources.</p>
+    <p><b>2.</b> Draft a working thesis, then build argument blocks. Each argument needs a topic sentence, one secondary source for context, three primary sources with an explanation of how each will be used, and a closing secondary source.</p>
+    <p><b>3.</b> Watch the structure glyph beside each argument. Your claim is the lintel — it stands only when the evidence beneath it is in place.</p>
+    <p>Everything autosaves in this browser. Use <b>Save file</b> to keep a copy you can reopen anywhere, and <b>Export outline</b> to produce the Word document you'll submit.</p>
+    <button class="btn solid" id="btnBegin" type="button">Begin</button>
+  </div>
+</div>
+
+<input type="file" id="fileInput" accept=".json,application/json" class="hidden">
+
+<script>
+/* Warrant — source-to-argument scaffold
+   Single-file tool. All data stays in the browser (localStorage + JSON files). */
+'use strict';
+
+/* ── State ─────────────────────────────────── */
+const LS_KEY = 'warrant_v1';
+const LS_WELCOME = 'warrant_welcome_seen';
+
+let uidCounter = 1;
+let state = blankState();
+let dirty = false;
+let saveTimer = null;
+
+function blankState(){
+  return {
+    meta:{title:'', name:'', course:''},
+    thesis:'',
+    intro:{hook:'', ctxSrc:'', ctxUse:'', sig:'', road:''},
+    sources:[],           // {id, kind:'primary'|'secondary', citation, note}
+    args:[newArg()],      // start with one block
+    conclusion:{restate:'', soWhat:''}
+  };
+}
+function newArg(){
+  return {
+    id:'a'+(uidCounter++)+'_'+Date.now(),
+    topic:'',
+    contextPlan:'',
+    contextSrc:'', contextUse:'',
+    evidence:[{src:'',use:''},{src:'',use:''},{src:'',use:''}],
+    closingSrc:'', closingUse:''
+  };
+}
+function uid(prefix){ return prefix+(uidCounter++)+'_'+Date.now(); }
+
+/* ── Guarded storage ───────────────────────── */
+function lsGet(k){ try{ return window.localStorage.getItem(k); }catch(e){ return null; } }
+function lsSet(k,v){ try{ window.localStorage.setItem(k,v); }catch(e){ /* private mode etc. */ } }
+
+function markDirty(){
+  dirty = true;
+  document.getElementById('saveDot').classList.add('dirty');
+  document.getElementById('saveDot').textContent = 'unsaved';
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(autosave, 700);
+}
+function autosave(){
+  lsSet(LS_KEY, JSON.stringify(state));
+  const dot = document.getElementById('saveDot');
+  dot.classList.remove('dirty');
+  dot.textContent = 'saved in browser';
+  dirty = false;
+}
+
+/* ── Helpers ───────────────────────────────── */
+function esc(s){
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function srcById(id){ return state.sources.find(s => s.id === id) || null; }
+function shortCite(s, max){
+  max = max || 58;
+  const t = (s.citation||'').replace(/\s+/g,' ').trim() || '(untitled source)';
+  return t.length > max ? t.slice(0, max-1) + '…' : t;
+}
+function allAssignedIds(){
+  const ids = [];
+  if(state.intro.ctxSrc) ids.push(state.intro.ctxSrc);
+  state.args.forEach(a => {
+    if(a.contextSrc) ids.push(a.contextSrc);
+    a.evidence.forEach(e => { if(e.src) ids.push(e.src); });
+    if(a.closingSrc) ids.push(a.closingSrc);
+  });
+  return ids;
+}
+
+/* ── Evidence pool ─────────────────────────── */
+let newKind = 'primary';
+
+function renderPool(){
+  const list = document.getElementById('srcList');
+  const assigned = allAssignedIds();
+  document.getElementById('srcCount').textContent = state.sources.length;
+
+  if(state.sources.length === 0){
+    list.innerHTML = '<p class="emptymsg">The pool is empty. Every argument you build will draw from here — add the sources you have gathered, primary and secondary, before you argue anything.</p>';
+    return;
+  }
+  list.innerHTML = '';
+  state.sources.forEach(s => {
+    const uses = assigned.filter(id => id === s.id).length;
+    const card = document.createElement('div');
+    card.className = 'srccard ' + s.kind;
+    card.innerHTML =
+      '<div class="badgerow">' +
+        '<span class="badge '+s.kind+'">'+s.kind+'</span>' +
+        '<span class="used '+(uses? '' : 'no')+'">'+(uses ? 'used ×'+uses : 'unused')+'</span>' +
+      '</div>' +
+      '<textarea data-f="citation" rows="2" aria-label="Citation">'+esc(s.citation)+'</textarea>' +
+      '<textarea data-f="note" class="note" rows="2" aria-label="What this source shows" placeholder="What does this source show?">'+esc(s.note)+'</textarea>' +
+      '<button class="del" title="Remove source" aria-label="Remove source">✕</button>';
+    card.querySelectorAll('textarea').forEach(ta => {
+      ta.addEventListener('input', () => { s[ta.dataset.f] = ta.value; markDirty(); });
+      if(ta.dataset.f === 'citation'){
+        ta.addEventListener('change', () => { renderArgs(); renderIntroCtx(); renderReadiness(); });
+      }
+    });
+    card.querySelector('.del').addEventListener('click', () => {
+      const usedIn = assigned.includes(s.id);
+      if(usedIn && !window.confirm('This source is assigned inside the paper. Remove it anyway? Its slots will be emptied.')) return;
+      state.sources = state.sources.filter(x => x.id !== s.id);
+      if(state.intro.ctxSrc === s.id) state.intro.ctxSrc = '';
+      state.args.forEach(a => {
+        if(a.contextSrc === s.id) a.contextSrc = '';
+        if(a.closingSrc === s.id) a.closingSrc = '';
+        a.evidence.forEach(e => { if(e.src === s.id) e.src = ''; });
+      });
+      markDirty(); renderAll();
+    });
+    list.appendChild(card);
+  });
+}
+
+function setKind(k){
+  newKind = k;
+  const p = document.getElementById('kindPrimary');
+  const s = document.getElementById('kindSecondary');
+  p.className = 'kindbtn' + (k==='primary' ? ' on-primary' : '');
+  s.className = 'kindbtn' + (k==='secondary' ? ' on-secondary' : '');
+}
+
+function addSource(){
+  const cit = document.getElementById('newCitation').value.trim();
+  const note = document.getElementById('newNote').value.trim();
+  if(!cit){ document.getElementById('newCitation').focus(); return; }
+  state.sources.push({id:uid('s'), kind:newKind, citation:cit, note:note});
+  document.getElementById('newCitation').value = '';
+  document.getElementById('newNote').value = '';
+  markDirty(); renderAll();
+}
+
+/* ── Slot builder (select + use textarea) ──── */
+function slotHTML(opts){
+  // opts: {label, kind:'primary'|'secondary', value, useValue, usePlaceholder, dup}
+  const filled = !!opts.value;
+  const cls = 'slot' + (filled ? ' filled-'+opts.kind : '');
+  const options = ['<option value="">— choose a '+opts.kind+' source —</option>']
+    .concat(state.sources.filter(s => s.kind === opts.kind)
+      .map(s => '<option value="'+s.id+'"'+(s.id===opts.value?' selected':'')+'>'+esc(shortCite(s))+'</option>'))
+    .join('');
+  return '<div class="'+cls+'">' +
+    '<div class="slotlbl">'+esc(opts.label)+(filled?'<span class="tick">●</span>':'')+'</div>' +
+    '<select data-slot>'+options+'</select>' +
+    (filled
+      ? '<textarea data-use rows="2" placeholder="'+esc(opts.usePlaceholder)+'">'+esc(opts.useValue||'')+'</textarea>'
+      : '') +
+    (opts.dup ? '<span class="dupflag">also used elsewhere — fine if deliberate</span>' : '') +
+  '</div>';
+}
+
+function bindSlot(container, get, set){
+  // container holds one slot; get() -> {src,use}; set(field, value)
+  const sel = container.querySelector('select[data-slot]');
+  sel.addEventListener('change', () => { set('src', sel.value); markDirty(); renderAll(); });
+  const ta = container.querySelector('textarea[data-use]');
+  if(ta){
+    ta.addEventListener('input', () => { set('use', ta.value); markDirty(); renderReadiness(); });
+  }
+}
+
+/* ── Intro context slot ────────────────────── */
+function renderIntroCtx(){
+  const holder = document.getElementById('introCtxSlot');
+  const assigned = allAssignedIds();
+  const dup = state.intro.ctxSrc && assigned.filter(id => id === state.intro.ctxSrc).length > 1;
+  holder.innerHTML = slotHTML({
+    label:'Secondary source for context',
+    kind:'secondary',
+    value:state.intro.ctxSrc,
+    useValue:state.intro.ctxUse,
+    usePlaceholder:'How does this source set the scene?',
+    dup:dup
+  });
+  bindSlot(holder.firstElementChild,
+    () => ({src:state.intro.ctxSrc, use:state.intro.ctxUse}),
+    (f,v) => { if(f==='src') state.intro.ctxSrc = v; else state.intro.ctxUse = v; });
+}
+
+/* ── Structure glyph ───────────────────────── */
+function glyphSVG(a){
+  const evi = a.evidence.map(e => !!(e.src && e.use.trim()));
+  const topic = !!a.topic.trim();
+  const ctx = !!(a.contextSrc && a.contextUse.trim());
+  const close = !!(a.closingSrc && a.closingUse.trim());
+  const stands = topic && ctx && close && evi.every(Boolean);
+
+  const inkStroke = 'var(--ink)';
+  function rect(x,y,w,h,on,color){
+    return on
+      ? '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="'+color+'" stroke="'+inkStroke+'" stroke-width="1.2"/>'
+      : '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="none" stroke="var(--ink-faint)" stroke-width="1.2" stroke-dasharray="4 3"/>';
+  }
+  // capstone (closing secondary) 8 tall, lintel (topic) 26, three pillars, footing (context)
+  let svg = '<svg class="glyph" viewBox="0 0 150 190" role="img" aria-label="Argument structure: ' + (stands ? 'stands' : 'incomplete') + '">';
+  svg += rect(35, 8, 80, 10, close, 'var(--secondary)');                 // capstone
+  svg += rect(15, 24, 120, 26, topic, stands ? 'var(--stand)' : 'var(--ink)'); // lintel
+  const px = [22, 64, 106];
+  px.forEach((x,i) => { svg += rect(x, 56, 22, 96, evi[i], 'var(--primary)'); }); // pillars
+  svg += rect(10, 158, 130, 14, ctx, 'var(--secondary)');                // footing
+  // caption
+  svg += '<text x="75" y="186" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9" letter-spacing="1.5" fill="'+(stands?'var(--stand)':'var(--ink-faint)')+'">'+(stands ? 'STANDS' : 'NOT YET STANDING')+'</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+/* ── Argument blocks ───────────────────────── */
+function argComplete(a){
+  return !!a.topic.trim()
+    && !!(a.contextSrc && a.contextUse.trim())
+    && a.evidence.every(e => e.src && e.use.trim())
+    && !!(a.closingSrc && a.closingUse.trim());
+}
+
+function renderArgs(){
+  const holder = document.getElementById('argList');
+  holder.innerHTML = '';
+  const assigned = allAssignedIds();
+  const counts = {};
+  assigned.forEach(id => counts[id] = (counts[id]||0)+1);
+
+  state.args.forEach((a, idx) => {
+    const sec = document.createElement('section');
+    sec.className = 'panel argblock';
+    const stands = argComplete(a);
+
+    let inner =
+      '<div class="arghead">' +
+        '<h3>Argument '+(idx+1)+'</h3>' +
+        '<span class="standtag'+(stands?' stands':'')+'">'+(stands?'stands':'in progress')+'</span>' +
+        '<span class="rm"><button class="btn small" data-rm type="button">Remove</button></span>' +
+      '</div>' +
+      '<div class="argbody">' +
+        '<div class="glyphwrap">'+glyphSVG(a)+'</div>' +
+        '<div>' +
+          '<label class="fieldlbl">Topic sentence</label>' +
+          '<textarea data-f="topic" rows="2" placeholder="One arguable claim this argument will prove — specific, with a clear before and after where possible.">'+esc(a.topic)+'</textarea>' +
+          '<label class="fieldlbl">Contextualization</label>' +
+          '<textarea data-f="contextPlan" rows="2" placeholder="What does the reader need to know before the evidence lands? Plan the setup paragraph here.">'+esc(a.contextPlan)+'</textarea>' +
+          '<div data-hold="ctx"></div>' +
+          '<label class="fieldlbl">Primary evidence — three sources</label>' +
+          '<div data-hold="ev0"></div><div data-hold="ev1"></div><div data-hold="ev2"></div>' +
+          '<label class="fieldlbl">Closing secondary source</label>' +
+          '<div data-hold="close"></div>' +
+        '</div>' +
+      '</div>';
+    sec.innerHTML = inner;
+
+    // text fields
+    sec.querySelectorAll('textarea[data-f]').forEach(ta => {
+      ta.addEventListener('input', () => {
+        a[ta.dataset.f] = ta.value; markDirty(); refreshArgHead(sec, a, idx); renderReadiness();
+      });
+    });
+
+    // remove
+    sec.querySelector('[data-rm]').addEventListener('click', () => {
+      if(!window.confirm('Remove Argument '+(idx+1)+'? Its text will be lost.')) return;
+      state.args.splice(idx,1);
+      if(state.args.length === 0) state.args.push(newArg());
+      markDirty(); renderAll();
+    });
+
+    // context slot
+    const ctxHold = sec.querySelector('[data-hold="ctx"]');
+    ctxHold.innerHTML = slotHTML({
+      label:'Secondary source — used as context',
+      kind:'secondary', value:a.contextSrc, useValue:a.contextUse,
+      usePlaceholder:'How does this source frame the argument?',
+      dup: a.contextSrc && counts[a.contextSrc] > 1
+    });
+    bindSlot(ctxHold.firstElementChild, null, (f,v)=>{ if(f==='src') a.contextSrc=v; else a.contextUse=v; });
+
+    // evidence slots
+    a.evidence.forEach((e, i) => {
+      const hold = sec.querySelector('[data-hold="ev'+i+'"]');
+      hold.innerHTML = slotHTML({
+        label:'Primary source '+(i+1),
+        kind:'primary', value:e.src, useValue:e.use,
+        usePlaceholder:'How will you use it, and where does it sit in the argument?',
+        dup: e.src && counts[e.src] > 1
+      });
+      bindSlot(hold.firstElementChild, null, (f,v)=>{ if(f==='src') e.src=v; else e.use=v; });
+    });
+
+    // closing slot
+    const clHold = sec.querySelector('[data-hold="close"]');
+    clHold.innerHTML = slotHTML({
+      label:'Secondary source — used as support',
+      kind:'secondary', value:a.closingSrc, useValue:a.closingUse,
+      usePlaceholder:'How does this scholar back your claim?',
+      dup: a.closingSrc && counts[a.closingSrc] > 1
+    });
+    bindSlot(clHold.firstElementChild, null, (f,v)=>{ if(f==='src') a.closingSrc=v; else a.closingUse=v; });
+
+    holder.appendChild(sec);
+  });
+}
+
+function refreshArgHead(sec, a, idx){
+  const stands = argComplete(a);
+  const tag = sec.querySelector('.standtag');
+  tag.className = 'standtag'+(stands?' stands':'');
+  tag.textContent = stands ? 'stands' : 'in progress';
+  sec.querySelector('.glyphwrap').innerHTML = glyphSVG(a);
+}
+
+/* ── Readiness ─────────────────────────────── */
+function renderReadiness(){
+  const items = [];
+  const done = c => c;
+
+  items.push({ok: !!state.thesis.trim(), text:'Working thesis drafted'});
+  items.push({ok: !!state.intro.hook.trim() && !!state.intro.sig.trim() && !!state.intro.road.trim(),
+              text:'Introduction planned — hook and context, significance, roadmap'});
+  items.push({ok: !!(state.intro.ctxSrc && state.intro.ctxUse.trim()), text:'Introduction has a secondary source for context'});
+  state.args.forEach((a,i) => items.push({ok:argComplete(a), text:'Argument '+(i+1)+' stands — claim, context, three primary sources, closing support'}));
+  items.push({ok: !!state.conclusion.restate.trim() && !!state.conclusion.soWhat.trim(), text:'Conclusion planned'});
+
+  const assigned = new Set(allAssignedIds());
+  const unused = state.sources.filter(s => !assigned.has(s.id));
+  const total = items.length;
+  const doneCount = items.filter(i => i.ok).length;
+  const pct = total ? Math.round(doneCount/total*100) : 0;
+
+  document.getElementById('meterFill').style.width = pct+'%';
+  document.getElementById('meterPct').textContent = pct+'% complete · '+doneCount+' of '+total+' checks';
+
+  const ul = document.getElementById('checkList');
+  ul.innerHTML = items.map(i => '<li class="'+(i.ok?'done':'')+'">'+esc(i.text)+'</li>').join('');
+  if(unused.length){
+    ul.innerHTML += '<li class="flag">'+unused.length+' source'+(unused.length>1?'s':'')+' in the pool '+(unused.length>1?'are':'is')+' not yet used anywhere — either work '+(unused.length>1?'them':'it')+' in or ask why '+(unused.length>1?'they are':'it is')+' there</li>';
+  }
+}
+
+/* ── Meta / intro / conclusion bindings ────── */
+function bindStatic(){
+  const map = [
+    ['mTitle', v => state.meta.title = v, () => state.meta.title],
+    ['mName',  v => state.meta.name = v,  () => state.meta.name],
+    ['mCourse',v => state.meta.course = v,() => state.meta.course],
+    ['mThesis',v => state.thesis = v,     () => state.thesis],
+    ['iHook',  v => state.intro.hook = v, () => state.intro.hook],
+    ['iSig',   v => state.intro.sig = v,  () => state.intro.sig],
+    ['iRoad',  v => state.intro.road = v, () => state.intro.road],
+    ['cRestate', v => state.conclusion.restate = v, () => state.conclusion.restate],
+    ['cSoWhat',  v => state.conclusion.soWhat = v,  () => state.conclusion.soWhat]
+  ];
+  map.forEach(([id, set]) => {
+    document.getElementById(id).addEventListener('input', e => { set(e.target.value); markDirty(); renderReadiness(); });
+  });
+}
+function fillStatic(){
+  document.getElementById('mTitle').value = state.meta.title;
+  document.getElementById('mName').value = state.meta.name;
+  document.getElementById('mCourse').value = state.meta.course;
+  document.getElementById('mThesis').value = state.thesis;
+  document.getElementById('iHook').value = state.intro.hook;
+  document.getElementById('iSig').value = state.intro.sig;
+  document.getElementById('iRoad').value = state.intro.road;
+  document.getElementById('cRestate').value = state.conclusion.restate;
+  document.getElementById('cSoWhat').value = state.conclusion.soWhat;
+}
+
+/* ── Save / open JSON file ─────────────────── */
+async function saveFile(){
+  const data = JSON.stringify({app:'warrant', version:1, saved:new Date().toISOString(), state:state}, null, 2);
+  const nameGuess = (state.meta.title || 'warrant-outline').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') || 'warrant-outline';
+  if(window.showSaveFilePicker){
+    try{
+      const handle = await window.showSaveFilePicker({
+        suggestedName: nameGuess + '.json',
+        types:[{description:'Warrant outline', accept:{'application/json':['.json']}}]
+      });
+      const w = await handle.createWritable();
+      await w.write(data); await w.close();
+      flashSaved('saved to file'); return;
+    }catch(e){ if(e && e.name === 'AbortError') return; }
+  }
+  const blob = new Blob([data], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = nameGuess + '.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  flashSaved('saved to file');
+}
+function flashSaved(msg){
+  const dot = document.getElementById('saveDot');
+  dot.classList.remove('dirty'); dot.textContent = msg; dirty = false;
+  lsSet(LS_KEY, JSON.stringify(state));
+}
+function openFile(){
+  document.getElementById('fileInput').click();
+}
+function handleFile(e){
+  const f = e.target.files && e.target.files[0];
+  if(!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try{
+      const obj = JSON.parse(r.result);
+      const st = obj && obj.state ? obj.state : obj;
+      if(!st || !Array.isArray(st.sources) || !Array.isArray(st.args)) throw new Error('bad shape');
+      state = normalize(st);
+      markDirty(); renderAll(); fillStatic(); autosave();
+    }catch(err){
+      window.alert('That file could not be read as a Warrant outline. It needs to be a .json file saved from this tool.');
+    }
+  };
+  r.readAsText(f);
+  e.target.value = '';
+}
+function normalize(st){
+  const base = blankState();
+  base.meta = Object.assign(base.meta, st.meta||{});
+  base.thesis = st.thesis || '';
+  base.intro = Object.assign(base.intro, st.intro||{});
+  base.conclusion = Object.assign(base.conclusion, st.conclusion||{});
+  base.sources = (st.sources||[]).map(s => ({id:s.id||uid('s'), kind:(s.kind==='secondary'?'secondary':'primary'), citation:s.citation||'', note:s.note||''}));
+  base.args = (st.args||[]).map(a => ({
+    id:a.id||uid('a'), topic:a.topic||'', contextPlan:a.contextPlan||'',
+    contextSrc:a.contextSrc||'', contextUse:a.contextUse||'',
+    evidence:[0,1,2].map(i => ({src:(a.evidence&&a.evidence[i]&&a.evidence[i].src)||'', use:(a.evidence&&a.evidence[i]&&a.evidence[i].use)||''})),
+    closingSrc:a.closingSrc||'', closingUse:a.closingUse||''
+  }));
+  if(base.args.length === 0) base.args.push(newArg());
+  return base;
+}
+
+/* ── Export Word-openable outline ──────────── */
+function exportOutline(){
+  const s = state;
+  const cite = id => { const src = srcById(id); return src ? esc(src.citation) : '<i>[no source assigned]</i>'; };
+  const useLine = (u) => u && u.trim() ? '<p class="use"><b>How it is used.</b> '+esc(u)+'</p>' : '<p class="use miss">[explain how this source is used]</p>';
+
+  let body = '';
+  body += '<p class="meta">'+esc(s.meta.name||'[Name]')+' · '+esc(s.meta.course||'[Course]')+'</p>';
+  body += '<h1>'+esc(s.meta.title||'[Working Title]')+'</h1>';
+
+  body += '<h2>Introduction</h2>';
+  body += '<p class="lbl">Hook and historical context</p><p>'+esc(s.intro.hook||'[Not yet drafted]')+'</p>';
+  body += '<p class="lbl">Secondary source for context</p><p class="src">'+ (s.intro.ctxSrc?cite(s.intro.ctxSrc):'<i>[no source assigned]</i>') +'</p>' + useLine(s.intro.ctxUse);
+  body += '<p class="lbl">Significance</p><p>'+esc(s.intro.sig||'[Not yet drafted]')+'</p>';
+  body += '<p class="lbl">Roadmap and thesis</p><p>'+esc(s.intro.road||'[Not yet drafted]')+'</p>';
+  body += '<p class="lbl">Working thesis</p><p class="thesis">'+esc(s.thesis||'[Not yet drafted]')+'</p>';
+
+  s.args.forEach((a,i) => {
+    body += '<h2>Argument '+(i+1)+'</h2>';
+    body += '<p class="lbl">Topic sentence</p><p><b>'+esc(a.topic||'[Not yet drafted]')+'</b></p>';
+    body += '<p class="lbl">Contextualization</p><p>'+esc(a.contextPlan||'[Not yet drafted]')+'</p>';
+    body += '<p class="lbl">Secondary source — context</p><p class="src">'+(a.contextSrc?cite(a.contextSrc):'<i>[no source assigned]</i>')+'</p>' + useLine(a.contextUse);
+    a.evidence.forEach((e,j) => {
+      body += '<p class="lbl">Primary source '+(j+1)+'</p><p class="src">'+(e.src?cite(e.src):'<i>[no source assigned]</i>')+'</p>' + useLine(e.use);
+    });
+    body += '<p class="lbl">Secondary source — support</p><p class="src">'+(a.closingSrc?cite(a.closingSrc):'<i>[no source assigned]</i>')+'</p>' + useLine(a.closingUse);
+  });
+
+  body += '<h2>Conclusion</h2>';
+  body += '<p class="lbl">Return to the thesis</p><p>'+esc(s.conclusion.restate||'[Not yet drafted]')+'</p>';
+  body += '<p class="lbl">So what</p><p>'+esc(s.conclusion.soWhat||'[Not yet drafted]')+'</p>';
+
+  const assigned = new Set(allAssignedIds());
+  const unused = s.sources.filter(x => !assigned.has(x.id));
+  if(s.sources.length){
+    body += '<h2>Source Inventory</h2>';
+    body += '<p class="lbl">Primary sources</p>';
+    s.sources.filter(x=>x.kind==='primary').forEach(x => { body += '<p class="src">'+esc(x.citation)+(assigned.has(x.id)?'':' <i>(not yet used)</i>')+'</p>'; });
+    body += '<p class="lbl">Secondary sources</p>';
+    s.sources.filter(x=>x.kind==='secondary').forEach(x => { body += '<p class="src">'+esc(x.citation)+(assigned.has(x.id)?'':' <i>(not yet used)</i>')+'</p>'; });
+  }
+
+  const doc = '<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>'+esc(s.meta.title||'Outline')+'</title><style>' +
+    'body{font-family:Georgia, "Times New Roman", serif; font-size:12pt; line-height:1.5; margin:1in; color:#111;}' +
+    'h1{font-size:18pt; margin:0 0 4pt;} h2{font-size:14pt; margin:18pt 0 6pt; border-bottom:1px solid #999; padding-bottom:2pt;}' +
+    '.meta{color:#555; font-size:10pt; margin:0;}' +
+    '.lbl{font-size:9pt; letter-spacing:1px; text-transform:uppercase; color:#666; margin:10pt 0 2pt; font-family:"Courier New", monospace;}' +
+    '.thesis{border-left:3pt solid #111; padding-left:8pt; font-weight:bold;}' +
+    '.src{margin:0 0 2pt; padding-left:14pt; text-indent:-14pt;}' +
+    '.use{margin:0 0 8pt; color:#333;} .use.miss{color:#996a1f; font-style:italic;}' +
+    'p{margin:0 0 8pt;}' +
+    '</style></head><body>'+body+'</body></html>';
+
+  const nameGuess = (s.meta.title || 'warrant-outline').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') || 'warrant-outline';
+  const blob = new Blob(['\ufeff', doc], {type:'application/msword'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = nameGuess + '-outline.doc';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+
+/* ── Welcome ───────────────────────────────── */
+function showWelcome(){ document.getElementById('welcomeOverlay').classList.remove('hidden'); }
+function hideWelcome(){
+  document.getElementById('welcomeOverlay').classList.add('hidden');
+  lsSet(LS_WELCOME, '1');
+}
+
+/* ── Render all ────────────────────────────── */
+function renderAll(){
+  renderPool();
+  renderIntroCtx();
+  renderArgs();
+  renderReadiness();
+}
+
+/* ── Init ──────────────────────────────────── */
+function init(){
+  const saved = lsGet(LS_KEY);
+  if(saved){
+    try{ state = normalize(JSON.parse(saved)); }catch(e){ state = blankState(); }
+  }
+  setKind('primary');
+  bindStatic();
+  fillStatic();
+  renderAll();
+
+  document.getElementById('kindPrimary').addEventListener('click', () => setKind('primary'));
+  document.getElementById('kindSecondary').addEventListener('click', () => setKind('secondary'));
+  document.getElementById('btnAddSrc').addEventListener('click', addSource);
+  document.getElementById('btnAddArg').addEventListener('click', () => { state.args.push(newArg()); markDirty(); renderAll(); });
+  document.getElementById('btnSave').addEventListener('click', saveFile);
+  document.getElementById('btnOpen').addEventListener('click', openFile);
+  document.getElementById('fileInput').addEventListener('change', handleFile);
+  document.getElementById('btnExport').addEventListener('click', exportOutline);
+  document.getElementById('btnHelp').addEventListener('click', showWelcome);
+  document.getElementById('btnBegin').addEventListener('click', hideWelcome);
+
+  if(!lsGet(LS_WELCOME)) showWelcome();
+
+  window.addEventListener('beforeunload', e => {
+    if(dirty){ autosave(); }
+  });
+}
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
