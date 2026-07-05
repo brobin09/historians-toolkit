@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Historian's Toolkit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Archivo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EDE8DA;
+  --paper-deep:#E2DBC8;
+  --panel:#F5F1E6;
+  --ink:#26221B;
+  --ink-soft:#5F584A;
+  --rule:#C7BEA6;
+  --oxblood:#7A2E2E;
+  --bluepencil:#3E5C76;
+  --shadow:0 1px 3px rgba(38,34,27,.14), 0 6px 18px rgba(38,34,27,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+body{
+  font-family:'Archivo',sans-serif;color:var(--ink);
+  background:var(--paper);
+  background-image:radial-gradient(rgba(38,34,27,.035) 1px, transparent 1px);
+  background-size:22px 22px;
+  min-height:100vh;
+}
+a{color:var(--bluepencil);text-decoration:underline;text-underline-offset:2px}
+a:hover{color:var(--oxblood)}
+a:focus-visible{outline:2px solid var(--bluepencil);outline-offset:3px;border-radius:2px}
+
+.page{max-width:920px;margin:0 auto;padding:56px 32px 80px}
+
+/* ---------- masthead ---------- */
+.masthead{
+  border-top:3px double var(--ink);border-bottom:1.5px solid var(--ink);
+  padding:14px 0;margin-bottom:44px;
+  display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:12px;
+}
+.folio-l,.folio-r{
+  font-size:.7rem;text-transform:uppercase;letter-spacing:.2em;color:var(--ink-soft);
+  font-family:'Spectral',serif;font-style:italic;
+}
+
+/* ---------- hero ---------- */
+.hero{margin-bottom:64px}
+.eyebrow{
+  font-size:.72rem;text-transform:uppercase;letter-spacing:.24em;color:var(--ink-soft);
+  margin-bottom:14px;
+}
+h1{
+  font-family:'Spectral',serif;font-weight:700;font-size:clamp(2.6rem,6vw,4.4rem);line-height:1;
+  letter-spacing:-.015em;margin-bottom:22px;
+}
+h1 .amp{font-style:italic;font-weight:400;color:var(--ink-soft);padding:0 .08em}
+.lede{
+  font-family:'Spectral',serif;font-size:clamp(1.05rem,1.6vw,1.2rem);line-height:1.6;color:var(--ink);
+  max-width:640px;
+}
+.lede em{font-style:italic;color:var(--ink-soft)}
+
+/* ---------- shelf ---------- */
+.shelf-label{
+  display:flex;align-items:center;gap:14px;margin-bottom:22px;
+  font-size:.72rem;text-transform:uppercase;letter-spacing:.18em;color:var(--ink-soft);
+}
+.shelf-label::before,.shelf-label::after{content:"";flex:1;height:1px;background:var(--rule)}
+.shelf-label::before{max-width:40px}
+
+.shelf{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:22px}
+
+.tool{
+  display:flex;flex-direction:column;background:var(--panel);border:1.5px solid var(--ink);
+  box-shadow:var(--shadow);padding:26px 28px 24px;position:relative;text-decoration:none;color:inherit;
+  transition:transform .18s ease, box-shadow .18s ease;
+}
+.tool:hover{transform:translateY(-3px);box-shadow:0 4px 8px rgba(38,34,27,.16), 0 14px 32px rgba(38,34,27,.12);color:inherit}
+.tool:hover .tool-name{color:var(--oxblood)}
+.tool-num{
+  position:absolute;top:20px;right:22px;
+  font-family:'Spectral',serif;font-style:italic;color:var(--ink-soft);font-size:.9rem;letter-spacing:.05em;
+}
+.tool-num::before{content:"№ "}
+.tool-name{
+  font-family:'Spectral',serif;font-weight:700;font-size:1.9rem;line-height:1.05;margin-bottom:2px;
+  transition:color .18s ease;
+}
+.tool-tag{
+  font-size:.68rem;text-transform:uppercase;letter-spacing:.14em;color:var(--ink-soft);margin-bottom:14px;
+}
+.tool-desc{
+  font-family:'Spectral',serif;font-size:.98rem;line-height:1.55;margin-bottom:18px;flex:1;
+}
+.tool-desc em{font-style:italic;color:var(--ink-soft)}
+.tool-features{
+  list-style:none;border-top:1px solid var(--rule);padding-top:12px;margin-bottom:18px;
+  font-size:.82rem;color:var(--ink-soft);
+}
+.tool-features li{padding:3px 0 3px 16px;position:relative;line-height:1.4}
+.tool-features li::before{
+  content:"";position:absolute;left:0;top:9px;width:8px;height:1px;background:var(--ink-soft);
+}
+.tool-open{
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:.75rem;text-transform:uppercase;letter-spacing:.14em;font-weight:700;
+  padding-top:12px;border-top:1.5px solid var(--ink);
+}
+.tool-open .arrow{font-family:'Spectral',serif;font-size:1.2rem;font-weight:400}
+
+/* ---------- how to use ---------- */
+.notes{margin-top:64px;border-top:1.5px solid var(--ink);padding-top:32px}
+.notes h2{
+  font-family:'Spectral',serif;font-size:1.5rem;font-weight:700;margin-bottom:18px;
+  display:flex;align-items:baseline;gap:12px;
+}
+.notes h2::before{
+  content:"§";font-style:italic;font-weight:400;color:var(--ink-soft);
+}
+.notes-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px 28px}
+.note{font-size:.9rem;line-height:1.55}
+.note h3{
+  font-family:'Archivo',sans-serif;font-size:.72rem;text-transform:uppercase;letter-spacing:.14em;
+  color:var(--ink-soft);margin-bottom:6px;font-weight:700;
+}
+.note p{font-family:'Spectral',serif}
+
+/* ---------- footer ---------- */
+footer{
+  margin-top:56px;padding-top:22px;border-top:1px solid var(--rule);
+  display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:12px;
+  font-size:.75rem;color:var(--ink-soft);
+}
+footer .colophon{font-family:'Spectral',serif;font-style:italic}
+
+@media (max-width:640px){
+  .page{padding:32px 20px 60px}
+  .hero{margin-bottom:44px}
+  .shelf{grid-template-columns:1fr}
+  .tool{padding:22px 22px 20px}
+  .tool-name{font-size:1.6rem}
+}
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div class="masthead">
+    <span class="folio-l">Historian's Toolkit</span>
+    <span class="folio-r">Brian A. Robinson · NCCU</span>
+  </div>
+
+  <section class="hero">
+    <p class="eyebrow">Tools for reading, thinking, and situating</p>
+    <h1>Sourcebook <span class="amp">&amp;</span> Strata</h1>
+    <p class="lede">Two browser-based tools for the history classroom. One is a workspace for <em>reading a text closely</em>. The other is a workspace for <em>seeing how texts about the past have been read</em>. Both are free, both are yours to use in your own courses, and both run entirely in your browser — nothing to install, nothing to sign up for.</p>
+  </section>
+
+  <p class="shelf-label">The Shelf</p>
+
+  <div class="shelf">
+
+    <a class="tool" href="sourcebook.html">
+      <span class="tool-num">I</span>
+      <div class="tool-name">Sourcebook</div>
+      <div class="tool-tag">Source Annotator</div>
+      <p class="tool-desc">A library for primary and secondary sources. Paste a document, then annotate it in the margin through the lenses historians use — sourcing, context, audience, language, claim, question. Secondary sources get their own lenses: thesis, evidence, dialogue, production.</p>
+      <ul class="tool-features">
+        <li>Group sources into collections by week, theme, or unit</li>
+        <li>Link secondary works to the primary sources they interpret</li>
+        <li>Print the document with annotations as endnotes for submission</li>
+      </ul>
+      <div class="tool-open"><span>Open Sourcebook</span><span class="arrow">→</span></div>
+    </a>
+
+    <a class="tool" href="strata.html">
+      <span class="tool-num">II</span>
+      <div class="tool-name">Strata</div>
+      <div class="tool-tag">Historiography Timeline</div>
+      <p class="tool-desc">A timeline that makes historiography visible. Enter the works that shaped how a subject has been written about, group them into schools of thought, and watch the interpretive strata form across the decades — the layers laid down, hardened, and cut through by the schools that followed.</p>
+      <ul class="tool-features">
+        <li>Opens with a full sample: the historiography of Reconstruction</li>
+        <li>Each work carries argument, evidence base, and context of production</li>
+        <li>Timeline or list view; print for a discussion handout</li>
+      </ul>
+      <div class="tool-open"><span>Open Strata</span><span class="arrow">→</span></div>
+    </a>
+
+  </div>
+
+  <section class="notes">
+    <h2>Before you start</h2>
+    <div class="notes-grid">
+      <div class="note">
+        <h3>Where your work lives</h3>
+        <p>Both tools save automatically in your browser as you go. Your work stays only on your device — nobody else can see it, not even the instructor. Each visitor has their own private workspace at the same URL.</p>
+      </div>
+      <div class="note">
+        <h3>Keep a backup</h3>
+        <p>Browser storage can be cleared — by settings, updates, or shared computers. Use the Export button often. A save dialog will open so you can choose a folder. Put it inside a cloud-synced folder like Drive, OneDrive, or iCloud and your backups sync automatically.</p>
+      </div>
+      <div class="note">
+        <h3>The exported file <em>is</em> the submission</h3>
+        <p>Turn in the JSON file the tool exports. Your instructor can import it into their own copy of the tool and see your annotations or timeline exactly as you left them.</p>
+      </div>
+      <div class="note">
+        <h3>Best on a laptop</h3>
+        <p>Sourcebook's text-selection annotation works on any device, but a laptop or tablet is more comfortable than a phone. Strata browses fine on any screen size.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span class="colophon">Set in Spectral and Archivo. Made for the classroom.</span>
+    <span>Free for anyone to use or adapt.</span>
+  </footer>
+
+</div>
+
+</body>
+</html>

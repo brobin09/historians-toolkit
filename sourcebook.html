@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sourcebook — Source Annotator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Archivo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EDE8DA;
+  --paper-deep:#E2DBC8;
+  --panel:#F5F1E6;
+  --ink:#26221B;
+  --ink-soft:#5F584A;
+  --rule:#C7BEA6;
+  --oxblood:#7A2E2E;
+  --bluepencil:#3E5C76;
+  --ochre:#96650F;
+  --moss:#4F6B3F;
+  --plum:#5E3A5E;
+  --graphite:#66655E;
+  --shadow:0 1px 3px rgba(38,34,27,.14), 0 6px 18px rgba(38,34,27,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
+body{
+  font-family:'Archivo',sans-serif;color:var(--ink);
+  background:var(--paper);
+  background-image:radial-gradient(rgba(38,34,27,.035) 1px, transparent 1px);
+  background-size:22px 22px;
+}
+button{font-family:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--bluepencil);outline-offset:2px}
+
+/* ---------- header ---------- */
+header{
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  padding:14px 22px;border-bottom:2px solid var(--ink);
+  background:var(--panel);position:sticky;top:0;z-index:40;
+}
+.wordmark{display:flex;align-items:baseline;gap:10px;cursor:pointer}
+.wordmark h1{font-family:'Spectral',serif;font-weight:700;font-size:1.35rem;letter-spacing:.01em}
+.wordmark span{font-size:.72rem;text-transform:uppercase;letter-spacing:.14em;color:var(--ink-soft)}
+.toolbar{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.btn{
+  border:1.5px solid var(--ink);background:var(--panel);color:var(--ink);
+  padding:7px 14px;font-size:.8rem;font-weight:600;letter-spacing:.03em;
+  border-radius:2px;transition:background .15s,color .15s;
+}
+.btn:hover{background:var(--ink);color:var(--panel)}
+.btn.primary{background:var(--ink);color:var(--panel)}
+.btn.primary:hover{background:var(--oxblood);border-color:var(--oxblood)}
+.btn.subtle{border-color:var(--rule);color:var(--ink-soft)}
+.btn.subtle:hover{border-color:var(--ink);background:transparent;color:var(--ink)}
+#backupStatus{
+  font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  padding:6px 12px;border-radius:20px;border:1.5px solid;cursor:pointer;background:transparent;
+}
+#backupStatus.ok{border-color:var(--moss);color:var(--moss);cursor:default}
+#backupStatus.dirty{border-color:var(--oxblood);color:var(--oxblood);animation:pulse 2.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
+@media (prefers-reduced-motion:reduce){#backupStatus.dirty{animation:none}}
+
+#welcomeCard{
+  max-width:640px;margin:32px auto 0;background:var(--panel);border:1.5px solid var(--ink);
+  box-shadow:var(--shadow);padding:26px 30px;position:relative;
+}
+#welcomeCard h2{font-family:'Spectral',serif;font-size:1.4rem;margin-bottom:6px}
+#welcomeCard .lead{color:var(--ink-soft);font-size:.9rem;line-height:1.55;margin-bottom:16px}
+#welcomeCard ol{list-style:none;counter-reset:step;padding:0;margin:0 0 18px}
+#welcomeCard ol li{
+  counter-increment:step;position:relative;padding:8px 0 8px 42px;border-top:1px solid var(--rule);
+  font-size:.9rem;line-height:1.55;
+}
+#welcomeCard ol li:last-child{border-bottom:1px solid var(--rule)}
+#welcomeCard ol li::before{
+  content:counter(step);position:absolute;left:0;top:10px;width:28px;height:28px;border-radius:50%;
+  border:1.5px solid var(--ink);display:flex;align-items:center;justify-content:center;
+  font-family:'Spectral',serif;font-weight:700;font-size:.9rem;
+}
+#welcomeCard ol li strong{display:block;font-size:.98rem;margin-bottom:2px;color:var(--ink)}
+#welcomeCard .actions{display:flex;justify-content:flex-end}
+
+.kind-badge{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;padding:3px 8px;border-radius:2px;color:#FBF8F0;flex:none}
+.kind-badge.primary{background:var(--oxblood)}
+.kind-badge.secondary{background:var(--bluepencil)}
+
+/* ---------- library ---------- */
+#library{max-width:1020px;margin:0 auto;padding:28px 26px 100px}
+.lib-head{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;margin-bottom:6px}
+.lib-head h2{font-family:'Spectral',serif;font-size:1.8rem;font-weight:700}
+.lib-head .stats{font-size:.75rem;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-soft)}
+.lib-actions{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 22px}
+.filters{display:flex;gap:6px;margin-left:auto}
+.chip{border:1.5px solid var(--rule);background:transparent;color:var(--ink-soft);padding:5px 12px;font-size:.72rem;font-weight:600;letter-spacing:.05em;border-radius:20px}
+.chip.on{border-color:var(--ink);background:var(--ink);color:var(--panel)}
+
+.collection{margin-bottom:30px}
+.coll-head{display:flex;align-items:center;gap:10px;border-bottom:1.5px solid var(--ink);padding-bottom:6px;margin-bottom:12px}
+.coll-head input{
+  font-family:'Spectral',serif;font-size:1.15rem;font-weight:600;border:none;background:transparent;
+  color:var(--ink);flex:1;min-width:120px;border-bottom:1px dashed transparent;padding:2px 0;
+}
+.coll-head input:hover,.coll-head input:focus{border-bottom-color:var(--rule);outline:none}
+.coll-head .coll-count{font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-soft)}
+.coll-head .coll-del{border:none;background:none;color:var(--ink-soft);font-size:.95rem;padding:4px}
+.coll-head .coll-del:hover{color:var(--oxblood)}
+
+.doc-card{
+  display:flex;align-items:center;gap:14px;background:#FBF8F0;border:1px solid var(--rule);
+  border-left:4px solid var(--rule);box-shadow:var(--shadow);border-radius:2px;
+  padding:12px 16px;margin-bottom:10px;
+}
+.doc-card.primary{border-left-color:var(--oxblood)}
+.doc-card.secondary{border-left-color:var(--bluepencil)}
+.doc-card .info{flex:1;min-width:0;cursor:pointer}
+.doc-card .ttl{font-family:'Spectral',serif;font-size:1rem;font-weight:600;line-height:1.3}
+.doc-card .info:hover .ttl{text-decoration:underline}
+.doc-card .sub{font-size:.78rem;color:var(--ink-soft);margin-top:2px}
+.doc-card .ann-count{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft);flex:none}
+.doc-card .ctrl{display:flex;gap:4px;align-items:center;flex:none}
+.doc-card .ctrl button{border:1px solid var(--rule);background:transparent;color:var(--ink-soft);width:26px;height:26px;border-radius:2px;font-size:.8rem;line-height:1}
+.doc-card .ctrl button:hover{border-color:var(--ink);color:var(--ink)}
+.doc-card .ctrl button.del:hover{border-color:var(--oxblood);color:var(--oxblood)}
+.doc-card .ctrl select{border:1px solid var(--rule);background:transparent;color:var(--ink-soft);font-size:.7rem;padding:4px;max-width:110px;border-radius:2px}
+.lib-empty{
+  border:1.5px dashed var(--rule);padding:34px;text-align:center;color:var(--ink-soft);
+  font-size:.9rem;line-height:1.6;border-radius:2px;
+}
+.coll-empty{font-size:.8rem;color:var(--ink-soft);font-style:italic;padding:4px 0 8px}
+
+/* ---------- reading layout ---------- */
+.workspace{display:grid;grid-template-columns:290px minmax(0,1fr);gap:0;min-height:calc(100vh - 62px)}
+aside.sidebar{
+  border-right:1px solid var(--rule);background:var(--panel);
+  padding:20px 18px;font-size:.83rem;
+}
+aside.sidebar h2{font-size:.7rem;text-transform:uppercase;letter-spacing:.16em;color:var(--ink-soft);margin:18px 0 8px;border-bottom:1px solid var(--rule);padding-bottom:5px}
+aside.sidebar h2:first-of-type{margin-top:14px}
+.back-link{border:none;background:none;color:var(--bluepencil);font-size:.78rem;font-weight:600;text-decoration:underline;padding:0}
+.meta-field{margin-bottom:9px}
+.meta-field label{display:block;font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-soft);margin-bottom:2px}
+.meta-field input,.meta-field textarea{
+  width:100%;border:1px solid var(--rule);background:#FBF8F0;padding:6px 8px;
+  font-family:'Spectral',serif;font-size:.88rem;color:var(--ink);border-radius:2px;
+}
+.meta-field textarea{resize:vertical;min-height:44px}
+.prompts{list-style:none}
+.prompts li{padding:6px 0 6px 14px;border-left:2px solid var(--rule);margin-bottom:6px;line-height:1.45;color:var(--ink-soft)}
+.prompts li strong{color:var(--ink)}
+.legend{list-style:none}
+.legend li{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:.8rem}
+.legend .swatch{width:14px;height:14px;border-radius:2px;flex:none;border:1px solid rgba(38,34,27,.25)}
+.related-list{list-style:none}
+.related-list li{display:flex;gap:7px;align-items:flex-start;padding:4px 0;line-height:1.35}
+.related-list input{margin-top:3px}
+.related-list label{font-size:.8rem;cursor:pointer}
+.related-none{font-size:.78rem;color:var(--ink-soft);font-style:italic}
+
+/* ---------- reading pane ---------- */
+.reading{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:0;align-items:start}
+#leaderSvg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:5}
+.doc-col{padding:44px 40px 120px 48px;max-width:760px;justify-self:end;width:100%}
+.doc-head{margin-bottom:26px;border-bottom:1px solid var(--rule);padding-bottom:16px}
+.doc-head .kind-badge{margin-bottom:8px;display:inline-block}
+.doc-head h2{font-family:'Spectral',serif;font-size:1.7rem;font-weight:700;line-height:1.2}
+.doc-head p{font-size:.82rem;color:var(--ink-soft);margin-top:6px}
+#docText{font-family:'Spectral',serif;font-size:1.06rem;line-height:1.85}
+#docText p{margin-bottom:1.15em}
+mark{
+  background:transparent;color:inherit;padding:1px 0;border-bottom:2px solid;cursor:pointer;
+  transition:background .15s;border-radius:1px;
+}
+mark[data-tag="sourcing"],mark[data-tag="thesis"]{border-color:var(--oxblood);background:rgba(122,46,46,.10)}
+mark[data-tag="context"],mark[data-tag="interpretation"]{border-color:var(--bluepencil);background:rgba(62,92,118,.10)}
+mark[data-tag="audience"],mark[data-tag="production"]{border-color:var(--ochre);background:rgba(150,101,15,.12)}
+mark[data-tag="language"],mark[data-tag="dialogue"]{border-color:var(--moss);background:rgba(79,107,63,.11)}
+mark[data-tag="claim"],mark[data-tag="evidence"]{border-color:var(--plum);background:rgba(94,58,94,.10)}
+mark[data-tag="question"]{border-color:var(--graphite);border-bottom-style:dashed;background:rgba(102,101,94,.09)}
+mark.active{background:rgba(38,34,27,.14)!important}
+sup.fnref{display:none;font-size:.65em}
+
+/* ---------- margin ---------- */
+.margin-col{position:relative;border-left:1px dashed var(--rule);min-height:400px;padding:44px 18px 120px 22px}
+.margin-note{
+  position:absolute;left:22px;right:14px;background:#FBF8F0;border:1px solid var(--rule);
+  border-left:3px solid var(--graphite);padding:8px 10px;font-size:.78rem;line-height:1.5;
+  box-shadow:var(--shadow);border-radius:2px;cursor:pointer;
+}
+.margin-note.c-oxblood{border-left-color:var(--oxblood)}
+.margin-note.c-bluepencil{border-left-color:var(--bluepencil)}
+.margin-note.c-ochre{border-left-color:var(--ochre)}
+.margin-note.c-moss{border-left-color:var(--moss)}
+.margin-note.c-plum{border-left-color:var(--plum)}
+.margin-note.active{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink), var(--shadow)}
+.margin-note .tagline{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.margin-note .tagname{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-soft)}
+.margin-note .del{border:none;background:none;color:var(--ink-soft);font-size:.85rem;line-height:1;padding:2px}
+.margin-note .del:hover{color:var(--oxblood)}
+.margin-note .note-body{font-family:'Spectral',serif;font-size:.85rem;white-space:pre-wrap}
+.margin-note textarea{width:100%;border:1px solid var(--rule);font-family:'Spectral',serif;font-size:.85rem;padding:4px;background:#fff}
+.margin-note .save-row{display:flex;gap:6px;margin-top:5px}
+.margin-note .save-row button{font-size:.68rem;padding:3px 8px;border:1px solid var(--ink);background:var(--ink);color:var(--panel);border-radius:2px}
+.margin-note .save-row .cancel{background:transparent;color:var(--ink)}
+.margin-empty{font-size:.78rem;color:var(--ink-soft);font-style:italic;padding-top:8px}
+
+/* ---------- selection popover ---------- */
+#popover{
+  position:absolute;z-index:60;background:var(--ink);color:var(--panel);
+  border-radius:3px;padding:8px;box-shadow:0 8px 24px rgba(38,34,27,.35);
+  display:none;width:260px;
+}
+#popover .tags{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+#popover .tagbtn{
+  border:none;border-left:3px solid;padding:5px 8px;font-size:.68rem;font-weight:600;
+  letter-spacing:.03em;text-align:left;background:rgba(245,241,230,.1);color:var(--panel);border-radius:2px;
+}
+#popover .tagbtn:hover{background:rgba(245,241,230,.25)}
+#popover textarea{width:100%;margin-top:7px;border:none;border-radius:2px;padding:6px;font-family:'Spectral',serif;font-size:.85rem;min-height:56px}
+#popover .actions{display:flex;gap:6px;margin-top:6px;justify-content:flex-end}
+#popover .actions button{font-size:.7rem;padding:4px 10px;border-radius:2px;border:1px solid var(--panel);background:transparent;color:var(--panel)}
+#popover .actions .confirm{background:var(--panel);color:var(--ink);font-weight:700}
+#popover .hint{font-size:.65rem;letter-spacing:.08em;text-transform:uppercase;opacity:.7;margin-bottom:6px}
+
+/* ---------- setup / modal ---------- */
+#overlay{position:fixed;inset:0;background:rgba(38,34,27,.45);z-index:90;display:none}
+#overlay.show{display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto}
+.modal{background:var(--panel);border:1.5px solid var(--ink);box-shadow:var(--shadow);width:min(680px,100%);padding:28px 32px}
+.modal h2{font-family:'Spectral',serif;font-size:1.5rem;margin-bottom:4px}
+.modal p.lead{color:var(--ink-soft);font-size:.88rem;margin-bottom:18px}
+.modal .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.modal label{display:block;font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-soft);margin:10px 0 3px}
+.modal input,.modal textarea,.modal select{
+  width:100%;border:1px solid var(--rule);background:#FBF8F0;padding:8px 10px;
+  font-family:'Spectral',serif;font-size:.93rem;color:var(--ink);border-radius:2px;
+}
+.modal textarea{min-height:170px;resize:vertical}
+.modal .row{display:flex;gap:10px;margin-top:20px;align-items:center;justify-content:flex-end}
+.modal .sample-link{margin-right:auto;font-size:.8rem;color:var(--bluepencil);background:none;border:none;text-decoration:underline;padding:0}
+
+/* ---------- print ---------- */
+#printReport{display:none}
+@media print{
+  header, aside.sidebar, .margin-col, #popover, #leaderSvg, #overlay{display:none!important}
+  body{background:#fff}
+  .workspace{display:block}
+  .reading{display:block}
+  .doc-col{max-width:100%;padding:0}
+  sup.fnref{display:inline;font-weight:700}
+  mark{background:transparent!important;border-bottom-width:1.5px}
+  #printReport{display:block;margin-top:28px;border-top:2px solid #000;padding-top:14px}
+  #printReport h3{font-family:'Spectral',serif;font-size:1.1rem;margin-bottom:10px}
+  #printReport ol{padding-left:20px;font-size:.85rem;line-height:1.5}
+  #printReport li{margin-bottom:8px}
+  #printReport .ptag{font-weight:700;text-transform:uppercase;font-size:.7rem;letter-spacing:.08em}
+}
+
+@media (max-width:1080px){
+  .workspace{grid-template-columns:1fr}
+  aside.sidebar{border-right:none;border-bottom:1px solid var(--rule)}
+  .reading{grid-template-columns:minmax(0,1fr) 260px}
+  .doc-col{padding:28px 20px 80px 24px}
+}
+@media (max-width:760px){
+  .reading{grid-template-columns:1fr}
+  .margin-col{border-left:none;border-top:1px dashed var(--rule);min-height:0;padding:16px}
+  .margin-note{position:static;margin-bottom:10px}
+  #leaderSvg{display:none}
+  .modal .grid{grid-template-columns:1fr}
+  .doc-card{flex-wrap:wrap}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wordmark" id="homeLink" title="Back to library">
+    <h1>Sourcebook</h1>
+    <span>Source Annotator</span>
+  </div>
+  <button id="backupStatus" class="ok" title="Backup status">Backed up</button>
+  <div class="toolbar" id="headerToolbar"></div>
+  <input type="file" id="fileInput" accept=".json" hidden>
+</header>
+
+<div id="app"></div>
+<div id="popover" role="dialog" aria-label="Annotate selection"></div>
+<div id="overlay"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------------- storage (guarded) ---------------- */
+var memStore = {};
+function storeGet(k){ try{ return localStorage.getItem(k); }catch(e){ return memStore[k]||null; } }
+function storeSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){ memStore[k]=v; } }
+var KEY = "sourcebook_v1";
+var LEGACY_KEY = "marginalia_doc_v1";
+
+/* ---------------- tag sets ---------------- */
+var TAGSETS = {
+  primary:{
+    sourcing:{label:"Sourcing", color:"#7A2E2E", cls:"c-oxblood"},
+    context:{label:"Context", color:"#3E5C76", cls:"c-bluepencil"},
+    audience:{label:"Audience", color:"#96650F", cls:"c-ochre"},
+    language:{label:"Language & tone", color:"#4F6B3F", cls:"c-moss"},
+    claim:{label:"Claim / evidence", color:"#5E3A5E", cls:"c-plum"},
+    question:{label:"Question", color:"#66655E", cls:""}
+  },
+  secondary:{
+    thesis:{label:"Thesis", color:"#7A2E2E", cls:"c-oxblood"},
+    interpretation:{label:"Interpretation", color:"#3E5C76", cls:"c-bluepencil"},
+    production:{label:"Context of production", color:"#96650F", cls:"c-ochre"},
+    dialogue:{label:"In dialogue with", color:"#4F6B3F", cls:"c-moss"},
+    evidence:{label:"Use of evidence", color:"#5E3A5E", cls:"c-plum"},
+    question:{label:"Question", color:"#66655E", cls:""}
+  }
+};
+function tagsFor(doc){ return TAGSETS[doc.kind] || TAGSETS.primary; }
+function tagInfo(doc,tag){ return tagsFor(doc)[tag] || {label:tag, color:"#66655E", cls:""}; }
+
+var PROMPTS = {
+  primary:[
+    "<strong>Who</strong> created this, and what was their position in the world it describes?",
+    "<strong>When</strong> was it made — in the moment, or in memory?",
+    "<strong>For whom</strong> was it written, and what did the author want from that audience?",
+    "<strong>What is said</strong> — and what is conspicuously not said?",
+    "<strong>What worldview</strong> or cultural reality does the language itself carry?",
+    "<strong>What other sources</strong> would corroborate or complicate this account?"
+  ],
+  secondary:[
+    "<strong>What is the thesis</strong> — the claim this historian is making about the past?",
+    "<strong>What evidence</strong> does the argument rest on, and how is it read?",
+    "<strong>What school</strong> or interpretive tradition does this work belong to?",
+    "<strong>What moment</strong> produced this interpretation — what questions did its era make urgent?",
+    "<strong>Whom is it answering</strong> — what earlier interpretation does it extend or overturn?",
+    "<strong>What primary sources</strong> in this sourcebook speak to its claims?"
+  ]
+};
+
+/* ---------------- state ---------------- */
+var state = null;
+var route = {view:"library", docId:null, filter:"all"};
+
+var SAMPLE = {
+  collections:[{id:"c1", name:"Slavery & Freedom — Week 4"}],
+  docs:[
+    {
+      id:"d1", kind:"primary", collectionId:"c1", order:0,
+      meta:{
+        title:"Narrative of the Life of Frederick Douglass (excerpt, Chapter VII)",
+        author:"Frederick Douglass", date:"1845",
+        type:"Autobiographical slave narrative",
+        provenance:"Published by the Anti-Slavery Office, Boston. Public domain."
+      },
+      text:"I lived in Master Hugh's family about seven years. During this time, I succeeded in learning to read and write. In accomplishing this, I was compelled to resort to various stratagems. I had no regular teacher. My mistress, who had kindly commenced to instruct me, had, in compliance with the advice and direction of her husband, not only ceased to instruct, but had set her face against my being instructed by any one else.\n\nFrom this time I was most narrowly watched. If I was in a separate room any considerable length of time, I was sure to be suspected of having a book, and was at once called to give an account of myself. All this, however, was too late. The first step had been taken. Mistress, in teaching me the alphabet, had given me the inch, and no precaution could prevent me from taking the ell.\n\nThe plan which I adopted, and the one by which I was most successful, was that of making friends of all the little white boys whom I met in the street. As many of these as I could, I converted into teachers. With their kindly aid, obtained at different times and in different places, I finally succeeded in learning to read.",
+      annotations:[]
+    },
+    {
+      id:"d2", kind:"secondary", collectionId:"c1", order:1,
+      meta:{
+        title:"Of the Dawn of Freedom (opening, The Souls of Black Folk)",
+        author:"W. E. B. Du Bois", date:"1903",
+        publication:"A. C. McClurg & Co., Chicago. Public domain.",
+        school:"Early Black historiography",
+        related:["d1"]
+      },
+      text:"The problem of the twentieth century is the problem of the color-line, — the relation of the darker to the lighter races of men in Asia and Africa, in America and the islands of the sea. It was a phase of this problem that caused the Civil War; and however much they who marched South and North in 1861 may have fixed on the technical points of union and local autonomy as a shibboleth, all nevertheless knew, as we know, that the question of Negro slavery was the real cause of the conflict.",
+      annotations:[]
+    }
+  ]
+};
+
+var DIRTY_KEY = KEY+"_dirty";
+function updateBackupUI(){
+  var el = document.getElementById("backupStatus");
+  if(!el) return;
+  var dirty = storeGet(DIRTY_KEY)==="1";
+  el.className = dirty ? "dirty" : "ok";
+  el.textContent = dirty ? "⚠ Not backed up — export" : "Backed up";
+  el.title = dirty
+    ? "Your work is saved only in this browser. Click to download a backup file — clearing browser data would erase unbacked-up work."
+    : "All changes are in your last export file.";
+}
+function markDirty(){ storeSet(DIRTY_KEY,"1"); updateBackupUI(); }
+function markClean(){ storeSet(DIRTY_KEY,"0"); updateBackupUI(); }
+function save(){ storeSet(KEY, JSON.stringify(state)); markDirty(); }
+function load(){
+  var raw = storeGet(KEY);
+  if(raw){ try{ state = JSON.parse(raw); }catch(e){ state=null; } }
+  if(state) return;
+  // migrate a legacy single-document save if one exists
+  var legacy = storeGet(LEGACY_KEY);
+  if(legacy){
+    try{
+      var old = JSON.parse(legacy);
+      if(old && typeof old.text==="string"){
+        state = {collections:[], docs:[]};
+        if(old.text){
+          state.docs.push({
+            id:uid("d"), kind:"primary", collectionId:null, order:0,
+            meta:{title:old.meta.title||"", author:old.meta.author||"", date:old.meta.date||"",
+                  type:old.meta.type||"", provenance:old.meta.provenance||""},
+            text:old.text, annotations:old.annotations||[]
+          });
+        }
+        save();
+        return;
+      }
+    }catch(e){}
+  }
+  state = JSON.parse(JSON.stringify(SAMPLE));
+  save();
+}
+
+/* ---------------- helpers ---------------- */
+function esc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function uid(p){ return p+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function getDoc(id){ return state.docs.find(function(d){return d.id===id;}); }
+function docsIn(collId){
+  return state.docs.filter(function(d){ return (d.collectionId||null)===(collId||null); })
+    .sort(function(a,b){ return (a.order||0)-(b.order||0); });
+}
+function byline(d){
+  if(d.kind==="secondary"){
+    return [d.meta.author, d.meta.date, d.meta.school].filter(Boolean).join(" · ");
+  }
+  return [d.meta.author, d.meta.date, d.meta.type].filter(Boolean).join(" · ");
+}
+function paragraphs(text){
+  var parts=[], re=/\n{2,}/g, last=0, m;
+  while((m=re.exec(text))!==null){ parts.push({start:last,end:m.index}); last=re.lastIndex; }
+  parts.push({start:last,end:text.length});
+  return parts.filter(function(p){ return text.slice(p.start,p.end).trim().length>0; });
+}
+
+/* ---------------- root render ---------------- */
+var app = document.getElementById("app");
+var headerToolbar = document.getElementById("headerToolbar");
+
+function render(){
+  if(route.view==="library") renderLibrary();
+  else renderReading();
+}
+
+/* ================= LIBRARY ================= */
+function renderLibrary(){
+  headerToolbar.innerHTML =
+    '<button class="btn primary" id="btnAddPrimary">+ Primary source</button>'+
+    '<button class="btn" id="btnAddSecondary">+ Secondary source</button>'+
+    '<button class="btn" id="btnAddColl">+ Collection</button>'+
+    '<button class="btn subtle" id="btnImport">Import</button>'+
+    '<button class="btn subtle" id="btnExport">Export</button>';
+  document.getElementById("btnAddPrimary").addEventListener("click",function(){ openDocModal(null,"primary"); });
+  document.getElementById("btnAddSecondary").addEventListener("click",function(){ openDocModal(null,"secondary"); });
+  document.getElementById("btnAddColl").addEventListener("click",function(){
+    state.collections.push({id:uid("c"), name:"New collection"});
+    save(); render();
+  });
+  wireImportExport();
+
+  var nP = state.docs.filter(function(d){return d.kind==="primary";}).length;
+  var nS = state.docs.length - nP;
+
+  var html = '<div id="library">'+
+    '<div class="lib-head"><h2>Library</h2>'+
+    '<span class="stats">'+nP+' primary · '+nS+' secondary · '+state.collections.length+' collections</span></div>'+
+    '<div class="lib-actions"><div class="filters">'+
+      '<button class="chip'+(route.filter==="all"?" on":"")+'" data-filter="all">All</button>'+
+      '<button class="chip'+(route.filter==="primary"?" on":"")+'" data-filter="primary">Primary</button>'+
+      '<button class="chip'+(route.filter==="secondary"?" on":"")+'" data-filter="secondary">Secondary</button>'+
+    '</div></div>';
+
+  if(state.docs.length===0){
+    html += '<div class="lib-empty">The shelf is bare. Add a primary or secondary source to begin, or import a saved sourcebook.</div>';
+  } else {
+    // named collections, then ungrouped
+    state.collections.forEach(function(c){
+      html += collectionHTML(c, docsIn(c.id));
+    });
+    var loose = docsIn(null);
+    if(loose.length){
+      html += collectionHTML(null, loose);
+    }
+  }
+  html += '</div>';
+  app.innerHTML = html;
+  wireLibrary();
+}
+
+function collectionHTML(coll, docs){
+  var visible = docs.filter(function(d){ return route.filter==="all" || d.kind===route.filter; });
+  var html = '<div class="collection" data-coll="'+(coll?coll.id:"")+'">'+
+    '<div class="coll-head">';
+  if(coll){
+    html += '<input value="'+esc(coll.name)+'" data-coll-name="'+coll.id+'" aria-label="Collection name">'+
+      '<span class="coll-count">'+docs.length+(docs.length===1?" source":" sources")+'</span>'+
+      '<button class="coll-del" data-coll-del="'+coll.id+'" title="Delete collection" aria-label="Delete collection">✕</button>';
+  } else {
+    html += '<input value="Ungrouped" disabled style="color:var(--ink-soft)">'+
+      '<span class="coll-count">'+docs.length+(docs.length===1?" source":" sources")+'</span>';
+  }
+  html += '</div>';
+  if(visible.length===0){
+    html += '<p class="coll-empty">'+(docs.length? "No "+route.filter+" sources here." : "Empty — move sources here with the collection menu on each card.")+'</p>';
+  }
+  visible.forEach(function(d,i){
+    var opts = '<option value=""'+(!d.collectionId?' selected':'')+'>Ungrouped</option>'+
+      state.collections.map(function(c){
+        return '<option value="'+c.id+'"'+(d.collectionId===c.id?' selected':'')+'>'+esc(c.name)+'</option>';
+      }).join("");
+    html += '<div class="doc-card '+d.kind+'">'+
+      '<span class="kind-badge '+d.kind+'">'+(d.kind==="primary"?"Primary":"Secondary")+'</span>'+
+      '<div class="info" data-open="'+d.id+'" role="button" tabindex="0">'+
+        '<div class="ttl">'+esc(d.meta.title||"Untitled")+'</div>'+
+        '<div class="sub">'+esc(byline(d))+'</div>'+
+      '</div>'+
+      '<span class="ann-count">'+d.annotations.length+(d.annotations.length===1?" note":" notes")+'</span>'+
+      '<div class="ctrl">'+
+        '<button data-up="'+d.id+'" title="Move up" aria-label="Move up" '+(i===0?'disabled':'')+'>↑</button>'+
+        '<button data-down="'+d.id+'" title="Move down" aria-label="Move down" '+(i===visible.length-1?'disabled':'')+'>↓</button>'+
+        '<select data-move="'+d.id+'" title="Move to collection" aria-label="Move to collection">'+opts+'</select>'+
+        '<button class="del" data-del="'+d.id+'" title="Delete source" aria-label="Delete source">✕</button>'+
+      '</div>'+
+    '</div>';
+  });
+  html += '</div>';
+  return html;
+}
+
+function wireLibrary(){
+  var lib = document.getElementById("library");
+  lib.addEventListener("click", function(e){
+    var chip = e.target.closest("[data-filter]");
+    if(chip){ route.filter = chip.getAttribute("data-filter"); render(); return; }
+    var open = e.target.closest("[data-open]");
+    if(open){ route = {view:"doc", docId:open.getAttribute("data-open"), filter:route.filter}; render(); return; }
+    var up = e.target.closest("[data-up]");
+    if(up){ shiftDoc(up.getAttribute("data-up"),-1); return; }
+    var down = e.target.closest("[data-down]");
+    if(down){ shiftDoc(down.getAttribute("data-down"),1); return; }
+    var del = e.target.closest("[data-del]");
+    if(del){
+      var d = getDoc(del.getAttribute("data-del"));
+      if(d && confirm('Delete "'+(d.meta.title||"Untitled")+'" and its '+d.annotations.length+' annotation(s)?')){
+        state.docs = state.docs.filter(function(x){return x.id!==d.id;});
+        // clean related links
+        state.docs.forEach(function(x){
+          if(x.meta.related) x.meta.related = x.meta.related.filter(function(id){return id!==d.id;});
+        });
+        save(); render();
+      }
+      return;
+    }
+    var cdel = e.target.closest("[data-coll-del]");
+    if(cdel){
+      var cid = cdel.getAttribute("data-coll-del");
+      var members = docsIn(cid);
+      if(confirm(members.length?("Delete this collection? Its "+members.length+" source(s) will move to Ungrouped."):"Delete this collection?")){
+        members.forEach(function(d){ d.collectionId=null; });
+        state.collections = state.collections.filter(function(c){return c.id!==cid;});
+        save(); render();
+      }
+      return;
+    }
+  });
+  lib.addEventListener("keydown", function(e){
+    if(e.key!=="Enter"&&e.key!==" ") return;
+    var open = e.target.closest("[data-open]");
+    if(open){ e.preventDefault(); route={view:"doc",docId:open.getAttribute("data-open"),filter:route.filter}; render(); }
+  });
+  lib.addEventListener("change", function(e){
+    var mv = e.target.closest("[data-move]");
+    if(mv){
+      var d = getDoc(mv.getAttribute("data-move"));
+      d.collectionId = mv.value || null;
+      d.order = docsIn(d.collectionId).length + 1;
+      normalizeOrders();
+      save(); render();
+    }
+  });
+  lib.addEventListener("input", function(e){
+    var nm = e.target.closest("[data-coll-name]");
+    if(nm){
+      var c = state.collections.find(function(x){return x.id===nm.getAttribute("data-coll-name");});
+      if(c){ c.name = nm.value; save(); }
+    }
+  });
+}
+
+function shiftDoc(id, dir){
+  var d = getDoc(id);
+  var siblings = docsIn(d.collectionId).filter(function(x){ return route.filter==="all"||x.kind===route.filter; });
+  var i = siblings.indexOf(d);
+  var j = i+dir;
+  if(j<0||j>=siblings.length) return;
+  var other = siblings[j];
+  var tmp = d.order; d.order = other.order; other.order = tmp;
+  normalizeOrders();
+  save(); render();
+}
+function normalizeOrders(){
+  var groups = [null].concat(state.collections.map(function(c){return c.id;}));
+  groups.forEach(function(g){
+    docsIn(g).forEach(function(d,i){ d.order=i; });
+  });
+}
+
+/* ================= DOC MODAL (new / edit text+meta) ================= */
+var overlay = document.getElementById("overlay");
+function openDocModal(editId, kind){
+  var d = editId ? getDoc(editId) : null;
+  var k = d ? d.kind : kind;
+  var isSec = k==="secondary";
+  var collOpts = '<option value="">Ungrouped</option>'+state.collections.map(function(c){
+    return '<option value="'+c.id+'"'+((d&&d.collectionId===c.id)?' selected':'')+'>'+esc(c.name)+'</option>';
+  }).join("");
+
+  overlay.innerHTML = '<div class="modal" role="dialog">'+
+    '<h2>'+(d?'Edit source':(isSec?'Add a secondary source':'Add a primary source'))+'</h2>'+
+    '<p class="lead">'+(isSec?
+      'A work of scholarship or interpretation. You will annotate its argument the way historians read one another.':
+      'A document from the past. You will annotate it in the margin, the way historians have always worked a text.')+'</p>'+
+    '<div class="grid">'+
+      '<div><label>Title</label><input id="fTitle" value="'+esc(d?d.meta.title:"")+'"></div>'+
+      '<div><label>'+(isSec?'Historian / author':'Author / creator')+'</label><input id="fAuthor" value="'+esc(d?d.meta.author:"")+'"></div>'+
+      '<div><label>'+(isSec?'Year':'Date')+'</label><input id="fDate" value="'+esc(d?d.meta.date:"")+'"></div>'+
+      (isSec?
+        '<div><label>Publication / press</label><input id="fPub" value="'+esc(d?d.meta.publication:"")+'"></div>':
+        '<div><label>Document type</label><input id="fType" value="'+esc(d?d.meta.type:"")+'"></div>')+
+    '</div>'+
+    (isSec?
+      '<label>School of thought</label><input id="fSchool" value="'+esc(d?d.meta.school:"")+'">':
+      '<label>Provenance / archive</label><input id="fProv" value="'+esc(d?d.meta.provenance:"")+'">')+
+    '<label>Collection</label><select id="fColl">'+collOpts+'</select>'+
+    '<label>'+(isSec?'Excerpt text':'Source text')+'</label>'+
+    '<textarea id="fText" placeholder="Paste the text here. Separate paragraphs with a blank line.">'+esc(d?d.text:"")+'</textarea>'+
+    (d&&d.annotations.length?'<p class="lead" style="margin-top:6px;color:var(--oxblood)">Editing the text of an annotated source can misplace its '+d.annotations.length+' existing note(s).</p>':'')+
+    '<div class="row">'+
+      '<button class="sample-link" id="fCancel" style="text-decoration:none;color:var(--ink-soft)">Cancel</button>'+
+      '<button class="btn primary" id="fSave">'+(d?'Save changes':'Add to library')+'</button>'+
+    '</div></div>';
+  overlay.classList.add("show");
+
+  document.getElementById("fCancel").addEventListener("click", closeModal);
+  document.getElementById("fSave").addEventListener("click", function(){
+    var t = document.getElementById("fText").value.trim();
+    var title = document.getElementById("fTitle").value.trim();
+    if(!t){ alert("Paste the text first."); return; }
+    var meta = {
+      title:title, author:document.getElementById("fAuthor").value.trim(),
+      date:document.getElementById("fDate").value.trim()
+    };
+    if(isSec){
+      meta.publication = document.getElementById("fPub").value.trim();
+      meta.school = document.getElementById("fSchool").value.trim();
+      meta.related = d && d.meta.related ? d.meta.related : [];
+    } else {
+      meta.type = document.getElementById("fType").value.trim();
+      meta.provenance = document.getElementById("fProv").value.trim();
+    }
+    var collId = document.getElementById("fColl").value || null;
+    if(d){
+      d.meta = meta; d.collectionId = collId;
+      if(d.text !== t){ d.text = t; }
+    } else {
+      state.docs.push({
+        id:uid("d"), kind:k, collectionId:collId,
+        order:docsIn(collId).length,
+        meta:meta, text:t, annotations:[]
+      });
+    }
+    normalizeOrders();
+    save(); closeModal(); render();
+  });
+}
+function closeModal(){ overlay.classList.remove("show"); overlay.innerHTML=""; }
+overlay.addEventListener("mousedown", function(e){ if(e.target===overlay) closeModal(); });
+
+/* ================= READING VIEW ================= */
+function renderReading(){
+  var d = getDoc(route.docId);
+  if(!d){ route={view:"library",docId:null,filter:route.filter}; render(); return; }
+  var TAGS = tagsFor(d);
+
+  headerToolbar.innerHTML =
+    '<button class="btn" id="btnBack">← Library</button>'+
+    '<button class="btn" id="btnEditDoc">Edit source</button>'+
+    '<button class="btn subtle" id="btnImport">Import</button>'+
+    '<button class="btn subtle" id="btnExport">Export</button>'+
+    '<button class="btn primary" id="btnPrint">Print report</button>';
+  document.getElementById("btnBack").addEventListener("click", function(){
+    route={view:"library",docId:null,filter:route.filter}; render();
+  });
+  document.getElementById("btnEditDoc").addEventListener("click", function(){ openDocModal(d.id); });
+  document.getElementById("btnPrint").addEventListener("click", function(){ window.print(); });
+  wireImportExport();
+
+  var anns = d.annotations.slice().sort(function(a,b){ return a.start-b.start; });
+  var paras = paragraphs(d.text);
+
+  /* sidebar */
+  var side = '<aside class="sidebar" id="sidebar">'+
+    '<button class="back-link" id="sideBack">← Back to library</button>'+
+    '<h2>'+(d.kind==="secondary"?"Work record":"Document record")+'</h2>';
+  var fields = d.kind==="secondary" ?
+    [["title","Title"],["author","Historian / author"],["date","Year"],["publication","Publication / press"],["school","School of thought"]] :
+    [["title","Title"],["author","Author / creator"],["date","Date"],["type","Document type"],["provenance","Provenance / archive"]];
+  fields.forEach(function(f){
+    var multi = (f[0]==="provenance");
+    side += '<div class="meta-field"><label>'+f[1]+'</label>'+
+      (multi?'<textarea data-meta="'+f[0]+'">'+esc(d.meta[f[0]])+'</textarea>':
+             '<input data-meta="'+f[0]+'" value="'+esc(d.meta[f[0]])+'">')+
+      '</div>';
+  });
+
+  if(d.kind==="secondary"){
+    side += '<h2>Linked primary sources</h2>';
+    var primaries = state.docs.filter(function(x){return x.kind==="primary";});
+    if(primaries.length===0){
+      side += '<p class="related-none">No primary sources in the library yet.</p>';
+    } else {
+      side += '<ul class="related-list">';
+      primaries.forEach(function(p){
+        var checked = (d.meta.related||[]).indexOf(p.id)>-1;
+        side += '<li><input type="checkbox" id="rel_'+p.id+'" data-rel="'+p.id+'"'+(checked?' checked':'')+'>'+
+          '<label for="rel_'+p.id+'">'+esc(p.meta.title||"Untitled")+'</label></li>';
+      });
+      side += '</ul>';
+    }
+  }
+
+  side += '<h2>Annotation lenses</h2><ul class="legend">';
+  Object.keys(TAGS).forEach(function(k){
+    side += '<li><span class="swatch" style="background:'+TAGS[k].color+'"></span> '+TAGS[k].label+'</li>';
+  });
+  side += '</ul><h2>'+(d.kind==="secondary"?"Reading prompts":"Sourcing prompts")+'</h2><ul class="prompts">';
+  PROMPTS[d.kind].forEach(function(p){ side += '<li>'+p+'</li>'; });
+  side += '</ul></aside>';
+
+  /* document */
+  var body = '<div class="reading" id="reading"><svg id="leaderSvg"></svg><div class="doc-col">';
+  body += '<div class="doc-head">'+
+    '<span class="kind-badge '+d.kind+'">'+(d.kind==="primary"?"Primary source":"Secondary source")+'</span>'+
+    '<h2>'+esc(d.meta.title||"Untitled")+'</h2>'+
+    '<p>'+esc(byline(d))+'</p></div>';
+  body += '<div id="docText">';
+  var fn=0;
+  paras.forEach(function(p){
+    var pText = d.text.slice(p.start,p.end);
+    var inP = anns.filter(function(a){ return a.start>=p.start && a.end<=p.end; });
+    var out='', cursor=0;
+    inP.forEach(function(a){
+      var s=a.start-p.start, e=a.end-p.start;
+      out += esc(pText.slice(cursor,s));
+      fn++;
+      out += '<mark data-id="'+a.id+'" data-tag="'+a.tag+'" tabindex="0">'+esc(pText.slice(s,e))+'</mark><sup class="fnref">'+fn+'</sup>';
+      cursor=e;
+    });
+    out += esc(pText.slice(cursor));
+    body += '<p data-start="'+p.start+'">'+out+'</p>';
+  });
+  body += '</div>';
+  body += '<div id="printReport"><h3>Annotations</h3><ol>';
+  anns.forEach(function(a){
+    body += '<li><span class="ptag">'+tagInfo(d,a.tag).label+':</span> '+esc(a.note||"")+'</li>';
+  });
+  body += '</ol></div></div>';
+
+  body += '<div class="margin-col" id="marginCol">';
+  if(anns.length===0){
+    body += '<p class="margin-empty">Select any passage in the text to leave a note here.</p>';
+  }
+  anns.forEach(function(a){
+    var ti = tagInfo(d,a.tag);
+    body += '<div class="margin-note '+ti.cls+'" data-id="'+a.id+'" tabindex="0">'+
+      '<div class="tagline"><span class="tagname">'+ti.label+'</span>'+
+      '<button class="del" title="Delete annotation" aria-label="Delete annotation">✕</button></div>'+
+      '<div class="note-body">'+esc(a.note||"")+'</div></div>';
+  });
+  body += '</div></div>';
+
+  app.innerHTML = '<div class="workspace">'+side+'<div id="mainArea">'+body+'</div></div>';
+  requestAnimationFrame(layoutMargin);
+  wireReading(d);
+}
+
+function layoutMargin(){
+  var reading = document.getElementById("reading");
+  if(!reading) return;
+  var marginCol = document.getElementById("marginCol");
+  var svg = document.getElementById("leaderSvg");
+  if(!marginCol||!svg) return;
+  if(window.innerWidth<=760) return;
+  var readRect = reading.getBoundingClientRect();
+  svg.setAttribute("viewBox","0 0 "+readRect.width+" "+reading.scrollHeight);
+  svg.innerHTML="";
+  var prevBottom=30;
+  marginCol.querySelectorAll(".margin-note").forEach(function(note){
+    var id = note.getAttribute("data-id");
+    var mark = document.querySelector('mark[data-id="'+id+'"]');
+    if(!mark) return;
+    var mRect = mark.getBoundingClientRect();
+    var desired = (mRect.top-readRect.top)-4;
+    var top = Math.max(desired, prevBottom+10);
+    note.style.top = top+"px";
+    prevBottom = top+note.offsetHeight;
+    var x1 = mRect.right-readRect.left+4;
+    var y1 = mRect.top-readRect.top+mRect.height/2;
+    var noteRect = note.getBoundingClientRect();
+    var x2 = noteRect.left-readRect.left-4;
+    var y2 = top+12;
+    var color = getComputedStyle(note).borderLeftColor;
+    var path = document.createElementNS("http://www.w3.org/2000/svg","path");
+    path.setAttribute("d","M"+x1+" "+y1+" C "+(x1+30)+" "+y1+", "+(x2-30)+" "+y2+", "+x2+" "+y2);
+    path.setAttribute("fill","none");
+    path.setAttribute("stroke",color);
+    path.setAttribute("stroke-width","1");
+    path.setAttribute("stroke-dasharray","2 3");
+    path.setAttribute("opacity","0.75");
+    svg.appendChild(path);
+  });
+  marginCol.style.minHeight = (prevBottom+40)+"px";
+}
+
+/* ---------------- annotation interactions ---------------- */
+var popover = document.getElementById("popover");
+var pendingRange = null;
+
+function wireReading(d){
+  var docText = document.getElementById("docText");
+  var sidebar = document.getElementById("sidebar");
+  var mainArea = document.getElementById("mainArea");
+
+  document.getElementById("sideBack").addEventListener("click", function(){
+    route={view:"library",docId:null,filter:route.filter}; render();
+  });
+
+  docText.addEventListener("mouseup", function(){ setTimeout(function(){ handleSelection(d); },10); });
+
+  mainArea.addEventListener("mouseover", function(e){
+    var t=e.target.closest("mark,.margin-note"); if(!t) return;
+    setActive(t.getAttribute("data-id"),true);
+  });
+  mainArea.addEventListener("mouseout", function(e){
+    var t=e.target.closest("mark,.margin-note"); if(!t) return;
+    setActive(t.getAttribute("data-id"),false);
+  });
+  mainArea.addEventListener("click", function(e){
+    var del=e.target.closest(".del");
+    if(del){
+      var id=del.closest(".margin-note").getAttribute("data-id");
+      if(confirm("Delete this annotation?")){
+        d.annotations = d.annotations.filter(function(a){return a.id!==id;});
+        save(); renderReading();
+      }
+      return;
+    }
+    var noteEl=e.target.closest(".margin-note");
+    if(noteEl && !noteEl.querySelector("textarea")){ startEdit(d,noteEl); return; }
+    var mark=e.target.closest("mark");
+    if(mark){
+      var mn=document.querySelector('.margin-note[data-id="'+mark.getAttribute("data-id")+'"]');
+      if(mn){ mn.scrollIntoView({block:"center"}); flash(mn); }
+    }
+  });
+
+  sidebar.addEventListener("input", function(e){
+    var k=e.target.getAttribute("data-meta");
+    if(k){
+      d.meta[k]=e.target.value; save();
+      var head=document.querySelector(".doc-head");
+      if(head){
+        head.querySelector("h2").textContent=d.meta.title||"Untitled";
+        head.querySelector("p").textContent=byline(d);
+      }
+      return;
+    }
+  });
+  sidebar.addEventListener("change", function(e){
+    var rel=e.target.closest("[data-rel]");
+    if(rel){
+      d.meta.related = d.meta.related||[];
+      var pid=rel.getAttribute("data-rel");
+      if(rel.checked){ if(d.meta.related.indexOf(pid)<0) d.meta.related.push(pid); }
+      else { d.meta.related = d.meta.related.filter(function(x){return x!==pid;}); }
+      save();
+    }
+  });
+}
+
+function setActive(id,on){
+  document.querySelectorAll('[data-id="'+id+'"]').forEach(function(el){ el.classList.toggle("active",on); });
+}
+function flash(el){ el.classList.add("active"); setTimeout(function(){el.classList.remove("active");},1200); }
+
+function startEdit(d,noteEl){
+  var id=noteEl.getAttribute("data-id");
+  var ann=d.annotations.find(function(a){return a.id===id;});
+  if(!ann) return;
+  var body=noteEl.querySelector(".note-body");
+  body.innerHTML='<textarea>'+esc(ann.note||"")+'</textarea>'+
+    '<div class="save-row"><button class="savebtn">Save</button><button class="cancel">Cancel</button></div>';
+  var ta=body.querySelector("textarea"); ta.focus();
+  body.querySelector(".savebtn").addEventListener("click",function(e){
+    e.stopPropagation(); ann.note=ta.value; save(); renderReading();
+  });
+  body.querySelector(".cancel").addEventListener("click",function(e){
+    e.stopPropagation(); renderReading();
+  });
+}
+
+function handleSelection(d){
+  var sel=window.getSelection();
+  if(!sel||sel.isCollapsed) return;
+  var range=sel.getRangeAt(0);
+  var docText=document.getElementById("docText");
+  if(!docText.contains(range.commonAncestorContainer)) return;
+
+  function pOf(node){
+    var el = node.nodeType===3 ? node.parentElement : node;
+    return el.closest ? el.closest("p[data-start]") : null;
+  }
+  var pStart=pOf(range.startContainer), pEnd=pOf(range.endContainer);
+  if(!pStart||!pEnd||pStart!==pEnd) return;
+  if(range.startContainer.nodeType===3 && range.startContainer.parentElement.closest("sup")) return;
+
+  var base=parseInt(pStart.getAttribute("data-start"),10);
+  var startOff=offsetIn(pStart,range.startContainer,range.startOffset);
+  var endOff=offsetIn(pStart,range.endContainer,range.endOffset);
+  if(startOff===null||endOff===null) return;
+  var s=base+Math.min(startOff,endOff), e=base+Math.max(startOff,endOff);
+  if(e<=s) return;
+
+  var overlaps=d.annotations.some(function(a){ return s<a.end && e>a.start; });
+  if(overlaps){
+    alert("That selection overlaps an existing annotation. Annotations can sit side by side but not on top of each other.");
+    sel.removeAllRanges();
+    return;
+  }
+  pendingRange={start:s,end:e};
+  showPopover(d,range);
+}
+
+function offsetIn(container,node,offset){
+  var walker=document.createTreeWalker(container,NodeFilter.SHOW_TEXT,{
+    acceptNode:function(n){
+      return n.parentElement.closest("sup")?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT;
+    }
+  });
+  var count=0,n;
+  if(node.nodeType!==3){
+    var target=node.childNodes[offset]||null;
+    while((n=walker.nextNode())){
+      if(target&&(target===n||(target.contains&&target.contains(n)))) return count;
+      if(target&&(n.compareDocumentPosition(target)&Node.DOCUMENT_POSITION_FOLLOWING)===0) return count;
+      count+=n.length;
+    }
+    return count;
+  }
+  while((n=walker.nextNode())){
+    if(n===node) return count+offset;
+    count+=n.length;
+  }
+  return null;
+}
+
+function showPopover(d,range){
+  var TAGS=tagsFor(d);
+  var rect=range.getBoundingClientRect();
+  var html='<div class="hint">Tag this passage</div><div class="tags">';
+  Object.keys(TAGS).forEach(function(k){
+    html+='<button class="tagbtn" data-tag="'+k+'" style="border-left-color:'+TAGS[k].color+'">'+TAGS[k].label+'</button>';
+  });
+  html+='</div>';
+  popover.innerHTML=html;
+  popover.style.display="block";
+  var top=window.scrollY+rect.bottom+8;
+  var left=Math.min(window.scrollX+rect.left, window.scrollX+window.innerWidth-280);
+  popover.style.top=top+"px";
+  popover.style.left=Math.max(8,left)+"px";
+
+  popover.querySelectorAll(".tagbtn").forEach(function(btn){
+    btn.addEventListener("click",function(){
+      var tag=btn.getAttribute("data-tag");
+      popover.innerHTML='<div class="hint">'+TAGS[tag].label+' — add your note</div>'+
+        '<textarea placeholder="What do you notice? What does it mean?"></textarea>'+
+        '<div class="actions"><button class="cancelbtn">Cancel</button><button class="confirm">Save note</button></div>';
+      var ta=popover.querySelector("textarea"); ta.focus();
+      popover.querySelector(".confirm").addEventListener("click",function(){
+        d.annotations.push({id:uid("a"),start:pendingRange.start,end:pendingRange.end,tag:tag,note:ta.value.trim()});
+        pendingRange=null;
+        hidePopover();
+        window.getSelection().removeAllRanges();
+        save(); renderReading();
+      });
+      popover.querySelector(".cancelbtn").addEventListener("click",hidePopover);
+    });
+  });
+}
+function hidePopover(){ popover.style.display="none"; popover.innerHTML=""; }
+document.addEventListener("mousedown",function(e){
+  if(popover.style.display==="block"&&!popover.contains(e.target)) hidePopover();
+});
+document.addEventListener("keydown",function(e){ if(e.key==="Escape"){ hidePopover(); closeModal(); } });
+
+/* ---------------- import / export ---------------- */
+function exportLibrary(){
+  var json = JSON.stringify(state,null,2);
+  var filename = "sourcebook-library.json";
+  if(window.showSaveFilePicker){
+    window.showSaveFilePicker({
+      suggestedName: filename,
+      types:[{description:"Sourcebook backup", accept:{"application/json":[".json"]}}]
+    }).then(function(handle){
+      return handle.createWritable().then(function(w){
+        return w.write(json).then(function(){ return w.close(); });
+      });
+    }).then(function(){ markClean(); }).catch(function(err){
+      if(err && err.name==="AbortError") return; // user cancelled
+      fallbackDownload(json, filename); markClean();
+    });
+  } else {
+    fallbackDownload(json, filename); markClean();
+  }
+}
+function fallbackDownload(text, filename){
+  var blob = new Blob([text],{type:"application/json"});
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click(); URL.revokeObjectURL(a.href);
+}
+function maybeShowWelcome(){
+  if(storeGet("sourcebook_welcomed")==="1") return;
+  // only show on the library view, not mid-annotation
+  if(route.view!=="library") return;
+  var lib = document.getElementById("library");
+  if(!lib) return;
+  var supported = !!window.showSaveFilePicker;
+  var card = document.createElement("div");
+  card.id = "welcomeCard";
+  card.innerHTML =
+    '<h2>Welcome — read this once</h2>'+
+    '<p class="lead">Sourcebook saves your work in this browser. That is convenient, but browser data can be cleared. Your <em>exported file</em> is the real save. Two quick steps and you are set for the semester.</p>'+
+    '<ol>'+
+      '<li><strong>Make a folder for your backups.</strong> Somewhere you will remember — Documents, Desktop, or better, inside a synced cloud folder like Google Drive, OneDrive, or iCloud. A synced folder means every export is automatically backed up to the cloud.</li>'+
+      (supported
+        ? '<li><strong>When you export, choose that folder.</strong> Sourcebook will open a save dialog every time so you can save the backup exactly where you want it.</li>'
+        : '<li><strong>Turn on “Ask where to save each file” in your browser.</strong> In Firefox: Settings → General → Files and Applications. In Safari: Preferences → General → File download location → Ask for each download. After that, every export will open a save dialog.</li>')+
+      '<li><strong>Watch the chip in the header.</strong> It turns red when you have unsaved work and green after you export. Export whenever it is red — especially before closing a shared computer.</li>'+
+    '</ol>'+
+    '<div class="actions"><button class="btn primary" id="welcomeDone">Got it</button></div>';
+  lib.insertBefore(card, lib.firstChild.nextSibling);
+  document.getElementById("welcomeDone").addEventListener("click", function(){
+    storeSet("sourcebook_welcomed","1");
+    card.remove();
+  });
+}
+function wireImportExport(){
+  var ex=document.getElementById("btnExport");
+  var im=document.getElementById("btnImport");
+  if(ex) ex.addEventListener("click",exportLibrary);
+  if(im) im.addEventListener("click",function(){ document.getElementById("fileInput").click(); });
+}
+document.getElementById("backupStatus").addEventListener("click",function(){
+  if(storeGet(DIRTY_KEY)==="1") exportLibrary();
+});
+document.getElementById("fileInput").addEventListener("change",function(e){
+  var f=e.target.files[0]; if(!f) return;
+  var r=new FileReader();
+  r.onload=function(){
+    try{
+      var data=JSON.parse(r.result);
+      if(Array.isArray(data.docs)&&Array.isArray(data.collections)){
+        state=data;
+      } else if(typeof data.text==="string"&&Array.isArray(data.annotations)){
+        // legacy single-document export: add it to the current library
+        state.docs.push({
+          id:uid("d"), kind:"primary", collectionId:null, order:docsIn(null).length,
+          meta:{title:data.meta.title||"Imported source", author:data.meta.author||"",
+                date:data.meta.date||"", type:data.meta.type||"", provenance:data.meta.provenance||""},
+          text:data.text, annotations:data.annotations
+        });
+      } else { throw new Error("bad shape"); }
+      normalizeOrders();
+      save();
+      route={view:"library",docId:null,filter:"all"};
+      render();
+    }catch(err){ alert("That file doesn't look like a Sourcebook export."); }
+  };
+  r.readAsText(f); e.target.value="";
+});
+
+document.getElementById("homeLink").addEventListener("click",function(){
+  route={view:"library",docId:null,filter:route.filter}; render();
+});
+window.addEventListener("resize",function(){ requestAnimationFrame(layoutMargin); });
+
+/* ---------------- init ---------------- */
+load();
+normalizeOrders();
+render();
+updateBackupUI();
+maybeShowWelcome();
+})();
+</script>
+</body>
+</html>

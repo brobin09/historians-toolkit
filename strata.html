@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Strata — Historiography Timeline Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Archivo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EDE8DA;
+  --panel:#F5F1E6;
+  --ink:#26221B;
+  --ink-soft:#5F584A;
+  --rule:#C7BEA6;
+  --shadow:0 1px 3px rgba(38,34,27,.14), 0 6px 18px rgba(38,34,27,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+body{
+  font-family:'Archivo',sans-serif;color:var(--ink);background:var(--paper);
+  background-image:radial-gradient(rgba(38,34,27,.035) 1px, transparent 1px);
+  background-size:22px 22px;
+}
+button{font-family:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid #3E5C76;outline-offset:2px}
+
+header{
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  padding:14px 22px;border-bottom:2px solid var(--ink);
+  background:var(--panel);position:sticky;top:0;z-index:40;
+}
+.wordmark{display:flex;align-items:baseline;gap:10px}
+.wordmark h1{font-family:'Spectral',serif;font-weight:700;font-size:1.35rem}
+.wordmark span{font-size:.72rem;text-transform:uppercase;letter-spacing:.14em;color:var(--ink-soft)}
+.toolbar{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{
+  border:1.5px solid var(--ink);background:var(--panel);color:var(--ink);
+  padding:7px 14px;font-size:.8rem;font-weight:600;letter-spacing:.03em;border-radius:2px;
+  transition:background .15s,color .15s;
+}
+.btn:hover{background:var(--ink);color:var(--panel)}
+.btn.primary{background:var(--ink);color:var(--panel)}
+.btn.primary:hover{background:#7A2E2E;border-color:#7A2E2E}
+.view-toggle{display:flex;border:1.5px solid var(--ink);border-radius:2px;overflow:hidden}
+.view-toggle button{border:none;background:var(--panel);padding:7px 12px;font-size:.8rem;font-weight:600}
+.view-toggle button.on{background:var(--ink);color:var(--panel)}
+#backupStatus{
+  font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  padding:6px 12px;border-radius:20px;border:1.5px solid;cursor:pointer;background:transparent;
+}
+#backupStatus.ok{border-color:#4F6B3F;color:#4F6B3F;cursor:default}
+#backupStatus.dirty{border-color:#7A2E2E;color:#7A2E2E;animation:pulse 2.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
+@media (prefers-reduced-motion:reduce){#backupStatus.dirty{animation:none}}
+
+#welcomeCard{
+  max-width:640px;margin:24px auto 0;background:var(--panel);border:1.5px solid var(--ink);
+  box-shadow:var(--shadow);padding:26px 30px;position:relative;
+}
+#welcomeCard h2{font-family:'Spectral',serif;font-size:1.4rem;margin-bottom:6px}
+#welcomeCard .lead{color:var(--ink-soft);font-size:.9rem;line-height:1.55;margin-bottom:16px}
+#welcomeCard ol{list-style:none;counter-reset:step;padding:0;margin:0 0 18px}
+#welcomeCard ol li{
+  counter-increment:step;position:relative;padding:8px 0 8px 42px;border-top:1px solid var(--rule);
+  font-size:.9rem;line-height:1.55;
+}
+#welcomeCard ol li:last-child{border-bottom:1px solid var(--rule)}
+#welcomeCard ol li::before{
+  content:counter(step);position:absolute;left:0;top:10px;width:28px;height:28px;border-radius:50%;
+  border:1.5px solid var(--ink);display:flex;align-items:center;justify-content:center;
+  font-family:'Spectral',serif;font-weight:700;font-size:.9rem;
+}
+#welcomeCard ol li strong{display:block;font-size:.98rem;margin-bottom:2px;color:var(--ink)}
+#welcomeCard .actions{display:flex;justify-content:flex-end}
+
+.titlebar{padding:22px 26px 6px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+#datasetTitle{
+  font-family:'Spectral',serif;font-size:1.7rem;font-weight:700;border:none;background:transparent;
+  color:var(--ink);width:min(640px,90vw);border-bottom:1px dashed transparent;padding:2px 0;
+}
+#datasetTitle:hover,#datasetTitle:focus{border-bottom-color:var(--rule);outline:none}
+.titlebar .count{font-size:.78rem;color:var(--ink-soft);letter-spacing:.05em;text-transform:uppercase}
+
+/* ---------- timeline ---------- */
+#timelineWrap{overflow-x:auto;padding:10px 0 60px}
+#timeline{position:relative;min-width:900px;padding:0 26px}
+.axis{position:relative;height:34px;margin-left:190px;border-bottom:1.5px solid var(--ink)}
+.axis .tick{position:absolute;top:0;height:100%;font-size:.7rem;color:var(--ink-soft);letter-spacing:.06em}
+.axis .tick::after{content:"";position:absolute;left:0;bottom:-1px;height:7px;width:1.5px;background:var(--ink)}
+.axis .tick span{position:absolute;left:4px;bottom:8px;font-weight:600}
+
+.band{display:flex;border-bottom:1px solid var(--rule);position:relative}
+.band:nth-child(even) .band-lane{background:rgba(38,34,27,.025)}
+.band-label{
+  flex:none;width:190px;padding:14px 14px 14px 0;position:sticky;left:0;background:var(--paper);z-index:6;
+  border-right:1.5px solid var(--ink);display:flex;flex-direction:column;justify-content:center;gap:3px;cursor:pointer;
+}
+.band-label:hover .band-name{text-decoration:underline}
+.band-name{font-family:'Spectral',serif;font-weight:600;font-size:.95rem;line-height:1.25;display:flex;align-items:center;gap:7px}
+.band-name .dot{width:11px;height:11px;border-radius:2px;flex:none;border:1px solid rgba(38,34,27,.3)}
+.band-meta{font-size:.68rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.1em}
+.band-lane{position:relative;flex:1;min-height:64px}
+.gridline{position:absolute;top:0;bottom:0;width:1px;background:rgba(38,34,27,.07)}
+
+.spine{
+  position:absolute;width:150px;border-radius:2px;padding:6px 8px 6px 10px;cursor:pointer;
+  background:#FBF8F0;border:1px solid var(--rule);border-left:4px solid;box-shadow:var(--shadow);
+  transition:transform .12s;
+}
+.spine:hover,.spine:focus-visible{transform:translateY(-2px);z-index:5}
+.spine .yr{font-size:.68rem;font-weight:700;letter-spacing:.06em}
+.spine .ttl{font-family:'Spectral',serif;font-size:.78rem;line-height:1.25;font-style:italic;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.spine .who{font-size:.68rem;color:var(--ink-soft)}
+.spine .marker{position:absolute;left:-4px;top:-9px;width:4px;height:8px}
+
+.empty-state{max-width:560px;margin:60px auto;background:var(--panel);border:1.5px solid var(--ink);box-shadow:var(--shadow);padding:32px 36px;text-align:center}
+.empty-state h2{font-family:'Spectral',serif;font-size:1.5rem;margin-bottom:8px}
+.empty-state p{color:var(--ink-soft);font-size:.9rem;margin-bottom:20px;line-height:1.5}
+.empty-state .row{display:flex;gap:10px;justify-content:center}
+
+/* ---------- list view ---------- */
+#listView{max-width:820px;margin:0 auto;padding:10px 26px 80px}
+.list-entry{
+  background:#FBF8F0;border:1px solid var(--rule);border-left:4px solid;box-shadow:var(--shadow);
+  padding:14px 18px;margin-bottom:14px;border-radius:2px;cursor:pointer;
+}
+.list-entry .top{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.list-entry .yr{font-weight:700;font-size:.85rem}
+.list-entry .ttl{font-family:'Spectral',serif;font-style:italic;font-size:1.05rem;font-weight:600}
+.list-entry .who{color:var(--ink-soft);font-size:.85rem}
+.list-entry .school-chip{margin-left:auto;font-size:.65rem;text-transform:uppercase;letter-spacing:.1em;font-weight:700;padding:3px 8px;border-radius:2px;color:#FBF8F0}
+.list-entry .arg{font-family:'Spectral',serif;font-size:.9rem;line-height:1.55;margin-top:8px}
+.list-entry .detail-label{font-size:.65rem;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-soft);margin-top:8px}
+.list-entry .detail-text{font-family:'Spectral',serif;font-size:.85rem;line-height:1.5}
+
+/* ---------- drawer ---------- */
+#drawer{
+  position:fixed;top:0;right:-440px;width:min(440px,100vw);height:100vh;background:var(--panel);
+  border-left:2px solid var(--ink);box-shadow:-8px 0 30px rgba(38,34,27,.2);z-index:80;
+  transition:right .22s ease;overflow-y:auto;padding:24px 26px 40px;
+}
+#drawer.open{right:0}
+#drawer .close{position:absolute;top:14px;right:16px;border:none;background:none;font-size:1.3rem;color:var(--ink-soft)}
+#drawer .close:hover{color:var(--ink)}
+#drawer .school-tag{display:inline-block;font-size:.65rem;text-transform:uppercase;letter-spacing:.12em;font-weight:700;padding:4px 9px;border-radius:2px;color:#FBF8F0;margin-bottom:12px}
+#drawer h3{font-family:'Spectral',serif;font-size:1.4rem;font-style:italic;line-height:1.25;margin-bottom:4px}
+#drawer .byline{color:var(--ink-soft);font-size:.9rem;margin-bottom:18px}
+#drawer h4{font-size:.68rem;text-transform:uppercase;letter-spacing:.14em;color:var(--ink-soft);margin:16px 0 5px;border-bottom:1px solid var(--rule);padding-bottom:4px}
+#drawer .body{font-family:'Spectral',serif;font-size:.95rem;line-height:1.6;white-space:pre-wrap}
+#drawer .actions{display:flex;gap:8px;margin-top:26px}
+#drawer .danger{border-color:#7A2E2E;color:#7A2E2E}
+#drawer .danger:hover{background:#7A2E2E;color:var(--panel)}
+
+/* ---------- modal ---------- */
+#overlay{position:fixed;inset:0;background:rgba(38,34,27,.45);z-index:90;display:none}
+#overlay.show{display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto}
+.modal{background:var(--panel);border:1.5px solid var(--ink);box-shadow:var(--shadow);width:min(620px,100%);padding:28px 32px}
+.modal h2{font-family:'Spectral',serif;font-size:1.4rem;margin-bottom:16px}
+.modal .grid{display:grid;grid-template-columns:1fr 130px;gap:12px}
+.modal label{display:block;font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-soft);margin:10px 0 3px}
+.modal input,.modal textarea,.modal select{
+  width:100%;border:1px solid var(--rule);background:#FBF8F0;padding:8px 10px;
+  font-family:'Spectral',serif;font-size:.93rem;color:var(--ink);border-radius:2px;
+}
+.modal textarea{resize:vertical;min-height:64px}
+.modal .row{display:flex;gap:10px;margin-top:20px;justify-content:flex-end}
+.modal .newschool{display:none;margin-top:6px;gap:8px;align-items:center}
+.modal .newschool.show{display:flex}
+.modal .newschool input[type=color]{width:44px;height:34px;padding:2px;background:#FBF8F0}
+
+@media print{
+  header,.titlebar .count,#drawer,#overlay,#timelineWrap{display:none!important}
+  body{background:#fff}
+  #listView{display:block!important;max-width:100%;padding:0}
+  .list-entry{box-shadow:none;break-inside:avoid}
+  #datasetTitle{border:none}
+}
+@media (max-width:700px){
+  .band-label{width:130px}
+  .axis{margin-left:130px}
+  .modal .grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wordmark">
+    <h1>Strata</h1>
+    <span>Historiography Timeline</span>
+  </div>
+  <button id="backupStatus" class="ok" title="Backup status">Backed up</button>
+  <div class="toolbar">
+    <div class="view-toggle" role="tablist">
+      <button id="vtTimeline" class="on">Timeline</button>
+      <button id="vtList">List</button>
+    </div>
+    <button class="btn primary" id="btnAdd">+ Add work</button>
+    <button class="btn" id="btnImport">Import</button>
+    <button class="btn" id="btnExport">Export</button>
+    <button class="btn" id="btnPrint">Print</button>
+    <button class="btn" id="btnNew">New</button>
+  </div>
+  <input type="file" id="fileInput" accept=".json" hidden>
+</header>
+
+<div class="titlebar">
+  <input id="datasetTitle" aria-label="Dataset title">
+  <span class="count" id="workCount"></span>
+</div>
+
+<div id="timelineWrap"><div id="timeline"></div></div>
+<div id="listView" style="display:none"></div>
+
+<aside id="drawer" aria-label="Work details"></aside>
+<div id="overlay"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------- storage ---------- */
+var memStore={};
+function storeGet(k){ try{return localStorage.getItem(k);}catch(e){return memStore[k]||null;} }
+function storeSet(k,v){ try{localStorage.setItem(k,v);}catch(e){memStore[k]=v;} }
+var KEY="strata_data_v1";
+
+var PALETTE=["#7A2E2E","#3E5C76","#96650F","#4F6B3F","#5E3A5E","#2F6F6A","#8A4B2D","#66655E"];
+
+var SAMPLE={
+  title:"The Historiography of Reconstruction",
+  schools:[
+    {id:"s1",name:"Dunning School",color:"#7A2E2E",desc:"Early twentieth-century interpretation centered at Columbia under William A. Dunning. Cast Reconstruction as a tragic error — vindictive Radicals, corrupt carpetbaggers, and Black political participation portrayed as failure. Openly shaped by the racial assumptions of the Jim Crow era, and it supplied scholarly cover for disfranchisement."},
+    {id:"s2",name:"Black Counter-Tradition",color:"#3E5C76",desc:"Black scholars who challenged the Dunning consensus decades before the mainstream profession did, insisting on Black agency, achievement, and the economic dimensions of the era. Long marginalized by the white academy, later vindicated."},
+    {id:"s3",name:"Revisionist",color:"#96650F",desc:"Postwar and civil-rights-era scholarship that dismantled the Dunning School point by point — rehabilitating Radical Republicans, documenting real accomplishments of Reconstruction governments, and treating Black southerners as historical actors."},
+    {id:"s4",name:"Post-Revisionist & Social History",color:"#4F6B3F",desc:"Work that moved past vindication to ask what Reconstruction achieved and where it fell short, often from the bottom up — labor, land, family, and community as the terrain where freedom's meaning was contested."},
+    {id:"s5",name:"Recent Directions",color:"#5E3A5E",desc:"Scholarship since the 2000s emphasizing Black political mobilization on its own terms, the violence of counter-revolution, gender, and Reconstruction's long afterlives in memory and policy."}
+  ],
+  works:[
+    {id:"w1",year:1907,title:"Reconstruction, Political and Economic",historian:"William A. Dunning",schoolId:"s1",argument:"Reconstruction was a misguided experiment imposed on a prostrate South; Black suffrage was its central mistake, and 'Redemption' its natural correction.",evidence:"Congressional records and white southern testimony, read through the racial assumptions of the era.",context:"Written at the height of Jim Crow; the interpretation both reflected and legitimized disfranchisement then underway."},
+    {id:"w2",year:1929,title:"The Tragic Era",historian:"Claude G. Bowers",schoolId:"s1",argument:"A popular, lurid retelling of the Dunning thesis for mass audiences — Reconstruction as an orgy of corruption and misrule.",evidence:"Selective anecdote and partisan press accounts; more journalism than scholarship.",context:"A bestseller that carried the Dunning School out of the seminar room and into national memory, textbooks, and film."},
+    {id:"w3",year:1935,title:"Black Reconstruction in America",historian:"W. E. B. Du Bois",schoolId:"s2",argument:"Reconstruction was a moment of genuine interracial democracy driven by Black labor — the 'general strike' of the enslaved — and it was overthrown by a counter-revolution of property. The final chapter indicts the historical profession itself as 'propaganda of history.'",evidence:"State-by-state analysis of Reconstruction governments, economic data, and a Marxian frame centering Black workers as agents.",context:"Written in the depths of the Depression and ignored by the white academy for decades; now widely regarded as the foundation the field eventually caught up to."},
+    {id:"w4",year:1961,title:"Reconstruction After the Civil War",historian:"John Hope Franklin",schoolId:"s3",argument:"A concise, devastating correction of the Dunning narrative — Reconstruction governments were neither uniquely corrupt nor Black-dominated, and their constitutional and educational reforms outlasted them.",evidence:"Systematic reexamination of state records and legislative accomplishment.",context:"Published as the civil rights movement gathered force; Franklin, trained at Harvard and teaching at Brooklyn College after years in HBCUs, embodied the Black scholarly tradition entering the mainstream."},
+    {id:"w5",year:1965,title:"The Era of Reconstruction, 1865–1877",historian:"Kenneth M. Stampp",schoolId:"s3",argument:"If Reconstruction was tragic, the tragedy was that it did not go far enough; the Radicals were idealists whose program of equal citizenship was betrayed, not vindicated, by its end.",evidence:"Synthesis of a generation of revisionist monographs on state politics.",context:"Appeared the year of the Voting Rights Act — the 'Second Reconstruction' made the first legible anew."},
+    {id:"w6",year:1979,title:"Been in the Storm So Long",historian:"Leon F. Litwack",schoolId:"s4",argument:"Emancipation as lived experience — how freedpeople themselves defined freedom in the first years after slavery, in movement, family, worship, labor, and land.",evidence:"WPA ex-slave narratives, freedpeople's letters, Freedmen's Bureau records — sources that put Black voices at the center.",context:"Pulitzer-winning landmark of social history's bottom-up turn; shifted the question from what was done to freedpeople toward what freedpeople did."},
+    {id:"w7",year:1988,title:"Reconstruction: America's Unfinished Revolution",historian:"Eric Foner",schoolId:"s4",argument:"The grand synthesis — Reconstruction as a revolutionary experiment in interracial democracy, centered on Black agency and the contested meanings of free labor, defeated by violence and northern retreat yet 'unfinished' rather than failed.",evidence:"Integration of political, economic, and social history across three decades of scholarship, with Du Bois's framework openly acknowledged.",context:"Standard account for a generation; its title concedes the field's debt to Black Reconstruction fifty-three years late."},
+    {id:"w8",year:2003,title:"A Nation Under Our Feet",historian:"Steven Hahn",schoolId:"s5",argument:"Black political life did not begin with the vote — enslaved and rural Black southerners built traditions of organization and struggle from slavery through the Great Migration, constituting a politics of their own.",evidence:"Kinship networks, rumor, migration, Union Leagues, and Kansas Fever read as political practice.",context:"Pulitzer winner that relocated Reconstruction inside a longer arc of Black self-organization rather than a bounded federal episode."},
+    {id:"w9",year:2023,title:"I Saw Death Coming",historian:"Kidada E. Williams",schoolId:"s5",argument:"Reconstruction's overthrow told from inside Black households — night-riding violence as targeted warfare against Black families' freedom, prosperity, and testimony.",evidence:"Congressional Klan hearings and survivor testimony, read closely for what victims said and risked in speaking.",context:"Reflects the field's current attention to violence, trauma, and Black testimony as historical evidence in its own right."}
+  ]
+};
+
+var state=null;
+var DIRTY_KEY=KEY+"_dirty";
+function updateBackupUI(){
+  var el=document.getElementById("backupStatus");
+  if(!el) return;
+  var dirty=storeGet(DIRTY_KEY)==="1";
+  el.className=dirty?"dirty":"ok";
+  el.textContent=dirty?"⚠ Not backed up — export":"Backed up";
+  el.title=dirty
+    ?"Your timeline is saved only in this browser. Click to download a backup file — clearing browser data would erase unbacked-up work."
+    :"All changes are in your last export file.";
+}
+function markDirty(){ storeSet(DIRTY_KEY,"1"); updateBackupUI(); }
+function markClean(){ storeSet(DIRTY_KEY,"0"); updateBackupUI(); }
+function save(){ storeSet(KEY, JSON.stringify(state)); markDirty(); }
+function load(){
+  var raw=storeGet(KEY);
+  if(raw){ try{state=JSON.parse(raw);}catch(e){state=null;} }
+}
+function esc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function uid(p){ return p+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function schoolOf(w){ return state.schools.find(function(s){return s.id===w.schoolId;}) || {name:"Unassigned",color:"#66655E",desc:""}; }
+
+/* ---------- views ---------- */
+var view="timeline";
+var tlWrap=document.getElementById("timelineWrap");
+var tl=document.getElementById("timeline");
+var listView=document.getElementById("listView");
+
+function render(){
+  document.getElementById("datasetTitle").value = state.title||"";
+  document.getElementById("workCount").textContent =
+    state.works.length + (state.works.length===1?" work · ":" works · ") + state.schools.length + " schools";
+  if(view==="timeline"){ tlWrap.style.display=""; listView.style.display="none"; renderTimeline(); }
+  else { tlWrap.style.display="none"; listView.style.display=""; renderList(); }
+}
+
+function renderTimeline(){
+  if(state.works.length===0){
+    tl.innerHTML='<div class="empty-state"><h2>An empty stratum</h2>'+
+      '<p>Every field of history is layered — interpretations laid down, hardened, and cut through by the schools that follow. Add the works of a historiography and watch its strata form.</p>'+
+      '<div class="row"><button class="btn primary" id="emptyAdd">Add the first work</button>'+
+      '<button class="btn" id="emptySample">Load sample — Reconstruction</button></div></div>';
+    document.getElementById("emptyAdd").addEventListener("click",function(){openWorkModal(null);});
+    document.getElementById("emptySample").addEventListener("click",function(){
+      state=JSON.parse(JSON.stringify(SAMPLE)); save(); render();
+    });
+    return;
+  }
+  var years=state.works.map(function(w){return w.year;});
+  var minY=Math.floor((Math.min.apply(null,years)-8)/10)*10;
+  var maxY=Math.ceil((Math.max.apply(null,years)+8)/10)*10;
+  var span=maxY-minY;
+  var pxPerYear=Math.max(9, Math.min(16, 1400/span));
+  var laneW=span*pxPerYear;
+  tl.style.minWidth=(laneW+190+60)+"px";
+
+  function xOf(y){ return (y-minY)*pxPerYear; }
+
+  var html='<div class="axis" style="width:'+laneW+'px">';
+  for(var y=minY;y<=maxY;y+=10){
+    html+='<div class="tick" style="left:'+xOf(y)+'px"><span>'+y+'</span></div>';
+  }
+  html+='</div>';
+
+  // order schools by earliest work
+  var schools=state.schools.slice();
+  schools.sort(function(a,b){
+    var ea=earliest(a.id), eb=earliest(b.id);
+    return ea-eb;
+  });
+  function earliest(sid){
+    var ys=state.works.filter(function(w){return w.schoolId===sid;}).map(function(w){return w.year;});
+    return ys.length?Math.min.apply(null,ys):99999;
+  }
+
+  var CHIP_W=150, ROW_H=62;
+  schools.forEach(function(s){
+    var works=state.works.filter(function(w){return w.schoolId===s.id;}).sort(function(a,b){return a.year-b.year;});
+    // row packing
+    var rows=[];
+    works.forEach(function(w){
+      var x=xOf(w.year);
+      var placed=false;
+      for(var r=0;r<rows.length;r++){
+        if(x > rows[r]+CHIP_W+8){ w._row=r; rows[r]=x; placed=true; break; }
+      }
+      if(!placed){ w._row=rows.length; rows.push(x); }
+    });
+    var laneH=Math.max(1,rows.length)*ROW_H+14;
+    html+='<div class="band"><div class="band-label" data-school="'+s.id+'" tabindex="0" role="button" aria-label="School: '+esc(s.name)+'">'+
+      '<div class="band-name"><span class="dot" style="background:'+s.color+'"></span>'+esc(s.name)+'</div>'+
+      '<div class="band-meta">'+works.length+(works.length===1?' work':' works')+'</div></div>'+
+      '<div class="band-lane" style="height:'+laneH+'px;width:'+laneW+'px">';
+    for(var g=minY;g<=maxY;g+=10){ html+='<div class="gridline" style="left:'+xOf(g)+'px"></div>'; }
+    works.forEach(function(w){
+      html+='<div class="spine" tabindex="0" role="button" data-work="'+w.id+'" style="left:'+xOf(w.year)+'px;top:'+(8+w._row*ROW_H)+'px;border-left-color:'+s.color+'">'+
+        '<div class="yr">'+w.year+'</div>'+
+        '<div class="ttl">'+esc(w.title)+'</div>'+
+        '<div class="who">'+esc(w.historian)+'</div></div>';
+    });
+    html+='</div></div>';
+  });
+  tl.innerHTML=html;
+}
+
+function renderList(){
+  var works=state.works.slice().sort(function(a,b){return a.year-b.year;});
+  if(works.length===0){ listView.innerHTML='<p style="text-align:center;color:var(--ink-soft);padding:40px">No works yet.</p>'; return; }
+  var html='';
+  works.forEach(function(w){
+    var s=schoolOf(w);
+    html+='<div class="list-entry" data-work="'+w.id+'" style="border-left-color:'+s.color+'" tabindex="0" role="button">'+
+      '<div class="top"><span class="yr">'+w.year+'</span>'+
+      '<span class="ttl">'+esc(w.title)+'</span>'+
+      '<span class="who">'+esc(w.historian)+'</span>'+
+      '<span class="school-chip" style="background:'+s.color+'">'+esc(s.name)+'</span></div>'+
+      (w.argument?'<div class="arg">'+esc(w.argument)+'</div>':'')+
+      (w.evidence?'<div class="detail-label">Evidence base</div><div class="detail-text">'+esc(w.evidence)+'</div>':'')+
+      (w.context?'<div class="detail-label">Context</div><div class="detail-text">'+esc(w.context)+'</div>':'')+
+      '</div>';
+  });
+  listView.innerHTML=html;
+}
+
+/* ---------- drawer ---------- */
+var drawer=document.getElementById("drawer");
+function openWork(id){
+  var w=state.works.find(function(x){return x.id===id;});
+  if(!w) return;
+  var s=schoolOf(w);
+  drawer.innerHTML='<button class="close" aria-label="Close">✕</button>'+
+    '<span class="school-tag" style="background:'+s.color+'">'+esc(s.name)+'</span>'+
+    '<h3>'+esc(w.title)+'</h3>'+
+    '<div class="byline">'+esc(w.historian)+' · '+w.year+'</div>'+
+    '<h4>Argument</h4><div class="body">'+esc(w.argument||"—")+'</div>'+
+    '<h4>Evidence base</h4><div class="body">'+esc(w.evidence||"—")+'</div>'+
+    '<h4>Context of production</h4><div class="body">'+esc(w.context||"—")+'</div>'+
+    '<div class="actions"><button class="btn" id="dEdit">Edit</button><button class="btn danger" id="dDelete">Delete</button></div>';
+  drawer.classList.add("open");
+  drawer.querySelector(".close").addEventListener("click",closeDrawer);
+  document.getElementById("dEdit").addEventListener("click",function(){ closeDrawer(); openWorkModal(w.id); });
+  document.getElementById("dDelete").addEventListener("click",function(){
+    if(confirm("Delete this work from the timeline?")){
+      state.works=state.works.filter(function(x){return x.id!==w.id;});
+      save(); closeDrawer(); render();
+    }
+  });
+}
+function openSchool(id){
+  var s=state.schools.find(function(x){return x.id===id;});
+  if(!s) return;
+  var count=state.works.filter(function(w){return w.schoolId===s.id;}).length;
+  drawer.innerHTML='<button class="close" aria-label="Close">✕</button>'+
+    '<span class="school-tag" style="background:'+s.color+'">School of thought</span>'+
+    '<h3 style="font-style:normal">'+esc(s.name)+'</h3>'+
+    '<div class="byline">'+count+(count===1?' work':' works')+' on this timeline</div>'+
+    '<h4>Interpretive stance</h4><div class="body" id="schoolDescView">'+esc(s.desc||"—")+'</div>'+
+    '<h4>Edit</h4>'+
+    '<label style="font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-soft)">Name</label>'+
+    '<input id="schName" style="width:100%;border:1px solid var(--rule);background:#FBF8F0;padding:7px;font-family:Spectral,serif;margin:3px 0 8px" value="'+esc(s.name)+'">'+
+    '<label style="font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-soft)">Description</label>'+
+    '<textarea id="schDesc" style="width:100%;border:1px solid var(--rule);background:#FBF8F0;padding:7px;font-family:Spectral,serif;min-height:90px;margin:3px 0 8px">'+esc(s.desc||"")+'</textarea>'+
+    '<label style="font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-soft)">Color</label> '+
+    '<input type="color" id="schColor" value="'+s.color+'" style="width:48px;height:32px;vertical-align:middle;margin-left:6px">'+
+    '<div class="actions"><button class="btn primary" id="schSave">Save school</button>'+
+    '<button class="btn danger" id="schDelete">Delete</button></div>';
+  drawer.classList.add("open");
+  drawer.querySelector(".close").addEventListener("click",closeDrawer);
+  document.getElementById("schSave").addEventListener("click",function(){
+    s.name=document.getElementById("schName").value.trim()||s.name;
+    s.desc=document.getElementById("schDesc").value;
+    s.color=document.getElementById("schColor").value;
+    save(); closeDrawer(); render();
+  });
+  document.getElementById("schDelete").addEventListener("click",function(){
+    var n=state.works.filter(function(w){return w.schoolId===s.id;}).length;
+    if(!confirm(n?("Delete this school? Its "+n+" work(s) will become unassigned."):"Delete this school?")) return;
+    state.schools=state.schools.filter(function(x){return x.id!==s.id;});
+    save(); closeDrawer(); render();
+  });
+}
+function closeDrawer(){ drawer.classList.remove("open"); }
+document.addEventListener("keydown",function(e){ if(e.key==="Escape"){ closeDrawer(); closeModal(); } });
+
+/* ---------- modal (add/edit work) ---------- */
+var overlay=document.getElementById("overlay");
+function openWorkModal(editId){
+  var w = editId ? state.works.find(function(x){return x.id===editId;}) : null;
+  var opts = state.schools.map(function(s){
+    return '<option value="'+s.id+'"'+((w&&w.schoolId===s.id)?' selected':'')+'>'+esc(s.name)+'</option>';
+  }).join("");
+  overlay.innerHTML='<div class="modal" role="dialog" aria-label="'+(w?"Edit work":"Add work")+'">'+
+    '<h2>'+(w?"Edit work":"Add a work")+'</h2>'+
+    '<div class="grid">'+
+      '<div><label>Title</label><input id="fTitle" value="'+esc(w?w.title:"")+'"></div>'+
+      '<div><label>Year</label><input id="fYear" type="number" value="'+(w?w.year:"")+'"></div>'+
+    '</div>'+
+    '<label>Historian</label><input id="fHist" value="'+esc(w?w.historian:"")+'">'+
+    '<label>School of thought</label>'+
+    '<select id="fSchool">'+opts+'<option value="__new__">＋ New school…</option></select>'+
+    '<div class="newschool" id="newSchoolRow">'+
+      '<input id="fNewSchool" placeholder="New school name">'+
+      '<input type="color" id="fNewColor" value="'+PALETTE[state.schools.length%PALETTE.length]+'">'+
+    '</div>'+
+    '<label>Argument</label><textarea id="fArg" placeholder="What does this work claim about the subject?">'+esc(w?w.argument:"")+'</textarea>'+
+    '<label>Evidence base</label><textarea id="fEvid" placeholder="What sources and methods does it rest on?">'+esc(w?w.evidence:"")+'</textarea>'+
+    '<label>Context of production</label><textarea id="fCtx" placeholder="What moment produced this interpretation?">'+esc(w?w.context:"")+'</textarea>'+
+    '<div class="row"><button class="btn" id="fCancel">Cancel</button>'+
+    '<button class="btn primary" id="fSave">'+(w?"Save changes":"Add to timeline")+'</button></div>'+
+  '</div>';
+  overlay.classList.add("show");
+  var sel=document.getElementById("fSchool");
+  sel.addEventListener("change",function(){
+    document.getElementById("newSchoolRow").classList.toggle("show", sel.value==="__new__");
+  });
+  if(state.schools.length===0){ sel.value="__new__"; document.getElementById("newSchoolRow").classList.add("show"); }
+  document.getElementById("fCancel").addEventListener("click",closeModal);
+  document.getElementById("fSave").addEventListener("click",function(){
+    var title=document.getElementById("fTitle").value.trim();
+    var year=parseInt(document.getElementById("fYear").value,10);
+    if(!title||isNaN(year)){ alert("A title and a year are required."); return; }
+    var schoolId=sel.value;
+    if(schoolId==="__new__"){
+      var nm=document.getElementById("fNewSchool").value.trim();
+      if(!nm){ alert("Name the new school of thought."); return; }
+      var ns={id:uid("s"),name:nm,color:document.getElementById("fNewColor").value,desc:""};
+      state.schools.push(ns);
+      schoolId=ns.id;
+    }
+    var data={
+      title:title, year:year,
+      historian:document.getElementById("fHist").value.trim(),
+      schoolId:schoolId,
+      argument:document.getElementById("fArg").value.trim(),
+      evidence:document.getElementById("fEvid").value.trim(),
+      context:document.getElementById("fCtx").value.trim()
+    };
+    if(w){ Object.assign(w,data); } else { data.id=uid("w"); state.works.push(data); }
+    save(); closeModal(); render();
+  });
+}
+function closeModal(){ overlay.classList.remove("show"); overlay.innerHTML=""; }
+overlay.addEventListener("mousedown",function(e){ if(e.target===overlay) closeModal(); });
+
+/* ---------- events ---------- */
+document.body.addEventListener("click",function(e){
+  var spine=e.target.closest("[data-work]");
+  if(spine){ openWork(spine.getAttribute("data-work")); return; }
+  var band=e.target.closest("[data-school]");
+  if(band){ openSchool(band.getAttribute("data-school")); return; }
+});
+document.body.addEventListener("keydown",function(e){
+  if(e.key!=="Enter"&&e.key!==" ") return;
+  var t=e.target.closest("[data-work],[data-school]");
+  if(!t) return;
+  e.preventDefault();
+  if(t.hasAttribute("data-work")) openWork(t.getAttribute("data-work"));
+  else openSchool(t.getAttribute("data-school"));
+});
+
+document.getElementById("vtTimeline").addEventListener("click",function(){
+  view="timeline"; this.classList.add("on"); document.getElementById("vtList").classList.remove("on"); render();
+});
+document.getElementById("vtList").addEventListener("click",function(){
+  view="list"; this.classList.add("on"); document.getElementById("vtTimeline").classList.remove("on"); render();
+});
+document.getElementById("btnAdd").addEventListener("click",function(){ openWorkModal(null); });
+document.getElementById("btnPrint").addEventListener("click",function(){
+  renderList(); window.print();
+});
+function exportTimeline(){
+  var json = JSON.stringify(state,null,2);
+  var filename = (state.title||"strata").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")+".json";
+  if(window.showSaveFilePicker){
+    window.showSaveFilePicker({
+      suggestedName: filename,
+      types:[{description:"Strata timeline", accept:{"application/json":[".json"]}}]
+    }).then(function(handle){
+      return handle.createWritable().then(function(w){
+        return w.write(json).then(function(){ return w.close(); });
+      });
+    }).then(function(){ markClean(); }).catch(function(err){
+      if(err && err.name==="AbortError") return;
+      fallbackDownload(json, filename); markClean();
+    });
+  } else {
+    fallbackDownload(json, filename); markClean();
+  }
+}
+function fallbackDownload(text, filename){
+  var blob=new Blob([text],{type:"application/json"});
+  var a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download=filename;
+  a.click(); URL.revokeObjectURL(a.href);
+}
+function maybeShowWelcome(){
+  if(storeGet("strata_welcomed")==="1") return;
+  var host = document.querySelector(".titlebar");
+  if(!host) return;
+  var supported = !!window.showSaveFilePicker;
+  var card = document.createElement("div");
+  card.id = "welcomeCard";
+  card.innerHTML =
+    '<h2>Welcome — read this once</h2>'+
+    '<p class="lead">Strata saves your timeline in this browser. That is convenient, but browser data can be cleared. Your <em>exported file</em> is the real save. Two quick steps and you are set for the semester.</p>'+
+    '<ol>'+
+      '<li><strong>Make a folder for your backups.</strong> Somewhere you will remember — Documents, Desktop, or better, inside a synced cloud folder like Google Drive, OneDrive, or iCloud. A synced folder means every export is automatically backed up to the cloud.</li>'+
+      (supported
+        ? '<li><strong>When you export, choose that folder.</strong> Strata will open a save dialog every time so you can save the backup exactly where you want it.</li>'
+        : '<li><strong>Turn on “Ask where to save each file” in your browser.</strong> In Firefox: Settings → General → Files and Applications. In Safari: Preferences → General → File download location → Ask for each download. After that, every export will open a save dialog.</li>')+
+      '<li><strong>Watch the chip in the header.</strong> It turns red when you have unsaved work and green after you export. Export whenever it is red — especially before closing a shared computer.</li>'+
+    '</ol>'+
+    '<div class="actions"><button class="btn primary" id="welcomeDone">Got it</button></div>';
+  host.parentNode.insertBefore(card, host.nextSibling);
+  document.getElementById("welcomeDone").addEventListener("click", function(){
+    storeSet("strata_welcomed","1");
+    card.remove();
+  });
+}
+document.getElementById("btnExport").addEventListener("click",exportTimeline);
+document.getElementById("backupStatus").addEventListener("click",function(){
+  if(storeGet(DIRTY_KEY)==="1") exportTimeline();
+});
+document.getElementById("btnImport").addEventListener("click",function(){ document.getElementById("fileInput").click(); });
+document.getElementById("fileInput").addEventListener("change",function(e){
+  var f=e.target.files[0]; if(!f) return;
+  var r=new FileReader();
+  r.onload=function(){
+    try{
+      var d=JSON.parse(r.result);
+      if(!Array.isArray(d.works)||!Array.isArray(d.schools)) throw new Error("bad");
+      state=d; save(); render();
+    }catch(err){ alert("That file doesn't look like a Strata export."); }
+  };
+  r.readAsText(f); e.target.value="";
+});
+document.getElementById("btnNew").addEventListener("click",function(){
+  if(state.works.length && !confirm("Start a new timeline? Current work is saved in this browser but will be replaced. Export first for a copy.")) return;
+  state={title:"Untitled historiography",schools:[],works:[]};
+  save(); render();
+});
+document.getElementById("datasetTitle").addEventListener("input",function(){
+  state.title=this.value; save();
+});
+
+/* ---------- init ---------- */
+load();
+if(!state){ state=JSON.parse(JSON.stringify(SAMPLE)); storeSet(KEY, JSON.stringify(state)); }
+render();
+updateBackupUI();
+maybeShowWelcome();
+})();
+</script>
+</body>
+</html>
