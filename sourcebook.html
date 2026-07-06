@@ -458,8 +458,10 @@ function renderLibrary(){
   document.getElementById("btnAddPrimary").addEventListener("click",function(){ openDocModal(null,"primary"); });
   document.getElementById("btnAddSecondary").addEventListener("click",function(){ openDocModal(null,"secondary"); });
   document.getElementById("btnAddColl").addEventListener("click",function(){
-    state.collections.push({id:uid("c"), name:"New collection"});
-    save(); render();
+    appPrompt("New collection", "e.g., Slavery & Freedom — Week 5", "New collection", function(name){
+      state.collections.push({id:uid("c"), name:name});
+      save(); render();
+    });
   });
   wireImportExport();
 
@@ -475,7 +477,7 @@ function renderLibrary(){
       '<button class="chip'+(route.filter==="secondary"?" on":"")+'" data-filter="secondary">Secondary</button>'+
     '</div></div>';
 
-  if(state.docs.length===0){
+  if(state.docs.length===0 && state.collections.length===0){
     html += '<div class="lib-empty">The shelf is bare. Add a primary or secondary source to begin, or import a saved sourcebook.</div>';
   } else {
     // named collections, then ungrouped
@@ -546,25 +548,25 @@ function wireLibrary(){
     var del = e.target.closest("[data-del]");
     if(del){
       var d = getDoc(del.getAttribute("data-del"));
-      if(d && confirm('Delete "'+(d.meta.title||"Untitled")+'" and its '+d.annotations.length+' annotation(s)?')){
+      if(d) appConfirm('Delete "'+(d.meta.title||"Untitled")+'" and its '+d.annotations.length+' annotation(s)?', function(){
         state.docs = state.docs.filter(function(x){return x.id!==d.id;});
         // clean related links
         state.docs.forEach(function(x){
           if(x.meta.related) x.meta.related = x.meta.related.filter(function(id){return id!==d.id;});
         });
         save(); render();
-      }
+      });
       return;
     }
     var cdel = e.target.closest("[data-coll-del]");
     if(cdel){
       var cid = cdel.getAttribute("data-coll-del");
       var members = docsIn(cid);
-      if(confirm(members.length?("Delete this collection? Its "+members.length+" source(s) will move to Ungrouped."):"Delete this collection?")){
+      appConfirm(members.length?("Delete this collection? Its "+members.length+" source(s) will move to Ungrouped."):"Delete this collection?", function(){
         members.forEach(function(d){ d.collectionId=null; });
         state.collections = state.collections.filter(function(c){return c.id!==cid;});
         save(); render();
-      }
+      });
       return;
     }
   });
@@ -636,7 +638,8 @@ function openDocModal(editId, kind){
     (isSec?
       '<label>School of thought</label><input id="fSchool" value="'+esc(d?d.meta.school:"")+'">':
       '<label>Provenance / archive</label><input id="fProv" value="'+esc(d?d.meta.provenance:"")+'">')+
-    '<label>Collection</label><select id="fColl">'+collOpts+'</select>'+
+    '<label>Collection</label><select id="fColl">'+collOpts+'<option value="__new__">＋ New collection…</option></select>'+
+    '<input id="fNewColl" placeholder="Name the new collection" style="display:none;margin-top:6px">'+
     '<label>'+(isSec?'Excerpt text':'Source text')+'</label>'+
     '<textarea id="fText" placeholder="Paste the text here. Separate paragraphs with a blank line.">'+esc(d?d.text:"")+'</textarea>'+
     (d&&d.annotations.length?'<p class="lead" style="margin-top:6px;color:var(--oxblood)">Editing the text of an annotated source can misplace its '+d.annotations.length+' existing note(s).</p>':'')+
@@ -647,10 +650,28 @@ function openDocModal(editId, kind){
   overlay.classList.add("show");
 
   document.getElementById("fCancel").addEventListener("click", closeModal);
+  document.getElementById("fColl").addEventListener("change", function(){
+    var ni = document.getElementById("fNewColl");
+    var isNew = this.value==="__new__";
+    ni.style.display = isNew ? "block" : "none";
+    if(isNew) ni.focus();
+  });
   document.getElementById("fSave").addEventListener("click", function(){
     var t = document.getElementById("fText").value.trim();
     var title = document.getElementById("fTitle").value.trim();
-    if(!t){ alert("Paste the text first."); return; }
+    if(!t){
+      var ft = document.getElementById("fText");
+      var errId = "fTextErr";
+      if(!document.getElementById(errId)){
+        var err = document.createElement("p");
+        err.id = errId; err.className = "lead";
+        err.style.cssText = "margin-top:6px;color:var(--oxblood)";
+        err.textContent = "Paste the text first.";
+        ft.insertAdjacentElement("afterend", err);
+      }
+      ft.focus();
+      return;
+    }
     var meta = {
       title:title, author:document.getElementById("fAuthor").value.trim(),
       date:document.getElementById("fDate").value.trim()
@@ -664,6 +685,12 @@ function openDocModal(editId, kind){
       meta.provenance = document.getElementById("fProv").value.trim();
     }
     var collId = document.getElementById("fColl").value || null;
+    if(collId==="__new__"){
+      var newName = document.getElementById("fNewColl").value.trim() || "New collection";
+      var newColl = {id:uid("c"), name:newName};
+      state.collections.push(newColl);
+      collId = newColl.id;
+    }
     if(d){
       d.meta = meta; d.collectionId = collId;
       if(d.text !== t){ d.text = t; }
@@ -679,6 +706,48 @@ function openDocModal(editId, kind){
   });
 }
 function closeModal(){ overlay.classList.remove("show"); overlay.innerHTML=""; }
+
+/* In-app confirm/alert. Native confirm()/alert() are silently blocked in
+   sandboxed iframes and some preview environments, which made deletes appear
+   to do nothing. These use the existing modal overlay instead. */
+function appConfirm(msg, onConfirm){
+  overlay.innerHTML = '<div class="modal" role="alertdialog" aria-modal="true">'+
+    '<h2>Confirm</h2><p class="lead">'+esc(msg)+'</p>'+
+    '<div class="row"><button class="btn" id="acCancel">Cancel</button>'+
+    '<button class="btn primary" id="acOk">Delete</button></div></div>';
+  overlay.classList.add("show");
+  document.getElementById("acCancel").addEventListener("click", closeModal);
+  document.getElementById("acOk").addEventListener("click", function(){
+    closeModal(); onConfirm();
+  });
+  document.getElementById("acOk").focus();
+}
+function appPrompt(title, placeholder, defaultVal, onSubmit){
+  overlay.innerHTML = '<div class="modal" role="dialog" aria-modal="true">'+
+    '<h2>'+esc(title)+'</h2>'+
+    '<label>Name</label><input id="apInput" placeholder="'+esc(placeholder||"")+'" value="'+esc(defaultVal||"")+'">'+
+    '<div class="row"><button class="btn" id="apCancel">Cancel</button>'+
+    '<button class="btn primary" id="apOk">Create</button></div></div>';
+  overlay.classList.add("show");
+  var input = document.getElementById("apInput");
+  function submit(){
+    var v = input.value.trim();
+    closeModal();
+    onSubmit(v || defaultVal || "");
+  }
+  document.getElementById("apCancel").addEventListener("click", closeModal);
+  document.getElementById("apOk").addEventListener("click", submit);
+  input.addEventListener("keydown", function(e){ if(e.key==="Enter"){ e.preventDefault(); submit(); } });
+  input.focus(); input.select();
+}
+function appAlert(msg){
+  overlay.innerHTML = '<div class="modal" role="alertdialog" aria-modal="true">'+
+    '<h2>Notice</h2><p class="lead">'+esc(msg)+'</p>'+
+    '<div class="row"><button class="btn primary" id="aaOk">OK</button></div></div>';
+  overlay.classList.add("show");
+  var ok = document.getElementById("aaOk");
+  ok.addEventListener("click", closeModal); ok.focus();
+}
 overlay.addEventListener("mousedown", function(e){ if(e.target===overlay) closeModal(); });
 
 /* ================= READING VIEW ================= */
@@ -854,10 +923,10 @@ function wireReading(d){
     var del=e.target.closest(".del");
     if(del){
       var id=del.closest(".margin-note").getAttribute("data-id");
-      if(confirm("Delete this annotation?")){
+      appConfirm("Delete this annotation?", function(){
         d.annotations = d.annotations.filter(function(a){return a.id!==id;});
         save(); renderReading();
-      }
+      });
       return;
     }
     var noteEl=e.target.closest(".margin-note");
@@ -938,7 +1007,7 @@ function handleSelection(d){
 
   var overlaps=d.annotations.some(function(a){ return s<a.end && e>a.start; });
   if(overlaps){
-    alert("That selection overlaps an existing annotation. Annotations can sit side by side but not on top of each other.");
+    appAlert("That selection overlaps an existing annotation. Annotations can sit side by side but not on top of each other.");
     sel.removeAllRanges();
     return;
   }
@@ -1091,7 +1160,7 @@ document.getElementById("fileInput").addEventListener("change",function(e){
       save();
       route={view:"library",docId:null,filter:"all"};
       render();
-    }catch(err){ alert("That file doesn't look like a Sourcebook export."); }
+    }catch(err){ appAlert("That file doesn't look like a Sourcebook export."); }
   };
   r.readAsText(f); e.target.value="";
 });
